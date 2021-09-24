@@ -3,6 +3,9 @@ import nltk
 import ssl
 import string
 import random
+import collections
+import nltk.metrics
+from nltk.metrics.scores import (precision, recall)
 from pathlib import Path
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -83,7 +86,7 @@ for x in labeledReviews:
 
 
 
-print(data)
+#print(data)
 # Randomizing and splitting data for training and testing
 random.shuffle(data)
 training = data[0:(int)(len(labeledReviews)/2)]
@@ -92,3 +95,33 @@ testing = data[(int)(len(labeledReviews)/2):]
 # NB Classifer
 classifier = nltk.NaiveBayesClassifier.train(training)
 classifier.show_most_informative_features()
+
+truesets = collections.defaultdict(set)
+classifiersets =  collections.defaultdict(set)
+# you want to look at precision and recall in both training anf testing
+# if your performnace is really good in training but horrible in testing
+# that means your model is overfitted
+
+for i, (doc, label) in enumerate(testing):
+  #run your classifier over testing dataset to see the peromance
+  truesets[label].add(i)
+  observed = classifier.classify(doc)
+  classifiersets[observed].add(i)
+
+print(truesets)
+print(classifiersets)
+# [1, 3, 4, 5, 19, 45]
+# [2, 3, 4, 19, 25, 40]
+
+pos_precision = precision(truesets['pos'], classifiersets['pos'])
+neg_precision = precision(truesets["neg"], classifiersets["neg"])
+pos_recall = recall(truesets['pos'], classifiersets['pos'])
+neg_recall = recall(truesets["neg"], classifiersets["neg"])
+print("Positive precision: ")
+print(pos_precision)
+print("Negative precision: ")
+print(neg_precision)
+print("Positive recall: ")
+print(pos_recall)
+print("Negative recall: ")
+print(neg_recall)
