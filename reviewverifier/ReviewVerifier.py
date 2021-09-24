@@ -1,6 +1,7 @@
 import nltk
 import ssl
 import string
+import random
 from pathlib import Path
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -40,35 +41,86 @@ labeledPosReviews = readFiles(posFiles)
 labeledNegReviews = readFiles(negFiles)
 labeledReviews = []
 
-# Loops case fold documents and remove punctuation, then append to labeledReviews based on tagged class
+#print(labeledPosReviews)
+
+noPunctPos = []
+noPunctNeg = []
+
+# Loops case fold documents and remove punctuation
 for document in labeledPosReviews:
     document = document.lower()
     document = "".join([char for char in document if char not in string.punctuation])
-    labeledReviews.append((document, "pos"))
+    noPunctPos.append(document)
 
 for document in labeledNegReviews:
     document = document.lower()
     document = "".join([char for char in document if char not in string.punctuation])
-    labeledReviews.append((document, "neg"))
+    noPunctNeg.append(document)
 
-#print(labeledReviews)
+#print(noPunctNeg)
 
 # Tokenization
-tokenized = set(word for words in labeledReviews for word in word_tokenize(words[0]))
-#print(tokenized)
+#words = word_tokenize(text)
+tokenizedNeg = []
+tokenizedPos = []
+for document in noPunctPos:
+    tokens = word_tokenize(document)
+    tokenizedPos.append(tokens)
 
-#Remove stop words
+for document in noPunctNeg:
+    tokens = word_tokenize(document)
+    tokenizedNeg.append(tokens)
+
+#print(tokenizedPos)
+
+# Remove stop words
 stopwords = stopwords.words("english")
-removedSW = [word for word in tokenized if word not in stopwords]
-#print(removedSW)
+removedPos = []
+removedNeg = []
+for document in tokenizedPos:
+    newDoc = []
+    for word in document:
+        if word not in stopwords:
+            newDoc.append(word)
+    removedPos.append(newDoc)
 
-#Stemming
+for document in tokenizedNeg:
+    newDoc = []
+    for word in document:
+        if word not in stopwords:
+            newDoc.append(word)
+    removedNeg.append(newDoc)
+
+#print(removedPos)
+
+# Stemming
 porter = PorterStemmer()
-stemmedWords = [porter.stem(word) for word in removedSW]
-print(stemmedWords)
+stemmedPos = []
+stemmedNeg = []
 
+for document in removedPos:
+    newDoc = []
+    for word in document:
+        newDoc.append(porter.stem(word))
+    stemmedPos.append(newDoc)
 
+for document in removedNeg:
+    newDoc = []
+    for word in document:
+        newDoc.append(porter.stem(word))
+    stemmedNeg.append(newDoc)
 
+#print(stemmedPos)
 
+# Collating to list with tag
+for document in stemmedPos:
+  labeledReviews.append((document, "pos"))
+for document in stemmedNeg:
+  labeledReviews.append((document, "neg"))
 
+print(labeledReviews)
 
+# Randomizing and splitting data for training and testing
+random.shuffle(labeledReviews)
+training = labeledReviews[0:(int)(len(labeledReviews)/2)]
+testing = labeledReviews[(int)(len(labeledReviews)/2):]
