@@ -1,3 +1,4 @@
+
 import nltk
 import ssl
 import string
@@ -50,77 +51,44 @@ noPunctNeg = []
 for document in labeledPosReviews:
     document = document.lower()
     document = "".join([char for char in document if char not in string.punctuation])
-    noPunctPos.append(document)
+    labeledReviews.append((document, "pos"))
 
 for document in labeledNegReviews:
     document = document.lower()
     document = "".join([char for char in document if char not in string.punctuation])
-    noPunctNeg.append(document)
+    labeledReviews.append((document, "neg"))
 
-#print(noPunctNeg)
+#print(labeledReviews)
 
 # Tokenization
 #words = word_tokenize(text)
-tokenizedNeg = []
-tokenizedPos = []
-for document in noPunctPos:
-    tokens = word_tokenize(document)
-    tokenizedPos.append(tokens)
-
-for document in noPunctNeg:
-    tokens = word_tokenize(document)
-    tokenizedNeg.append(tokens)
-
-#print(tokenizedPos)
-
-# Remove stop words
+tokens = set(word for words in labeledReviews for word in word_tokenize(words[0]))
+#print(tokens)
 stopwords = stopwords.words("english")
-removedPos = []
-removedNeg = []
-for document in tokenizedPos:
-    newDoc = []
-    for word in document:
-        if word not in stopwords:
-            newDoc.append(word)
-    removedPos.append(newDoc)
 
-for document in tokenizedNeg:
-    newDoc = []
-    for word in document:
-        if word not in stopwords:
-            newDoc.append(word)
-    removedNeg.append(newDoc)
-
-#print(removedPos)
-
-# Stemming
+#Finish tokenization
+#data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
+data = []
 porter = PorterStemmer()
-stemmedPos = []
-stemmedNeg = []
+for x in labeledReviews:
+    dictionary = {}
+    for word in tokens:
+        if word not in stopwords:
+            con = word in x[0]
+            stemmed = porter.stem(word)
+            if not dictionary.get(stemmed):
+                dictionary[stemmed] = con
+    data.append((dictionary, x[1]))
 
-for document in removedPos:
-    newDoc = []
-    for word in document:
-        newDoc.append(porter.stem(word))
-    stemmedPos.append(newDoc)
 
-for document in removedNeg:
-    newDoc = []
-    for word in document:
-        newDoc.append(porter.stem(word))
-    stemmedNeg.append(newDoc)
 
-#print(stemmedPos)
 
-# Collating to list with tag
-for document in stemmedPos:
-  labeledReviews.append((document, "pos"))
-for document in stemmedNeg:
-  labeledReviews.append((document, "neg"))
-
-print(labeledReviews)
-
+print(data)
 # Randomizing and splitting data for training and testing
-random.shuffle(labeledReviews)
-training = labeledReviews[0:(int)(len(labeledReviews)/2)]
-testing = labeledReviews[(int)(len(labeledReviews)/2):]
+random.shuffle(data)
+training = data[0:(int)(len(labeledReviews)/2)]
+testing = data[(int)(len(labeledReviews)/2):]
+
+# NB Classifer
+classifier = nltk.NaiveBayesClassifier.train(training)
+classifier.show_most_informative_features()
