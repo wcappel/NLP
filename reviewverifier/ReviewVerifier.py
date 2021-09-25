@@ -1,6 +1,5 @@
 
 import nltk
-import ssl
 import string
 import random
 import collections
@@ -11,15 +10,8 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
-nltk.download("punkt")
-nltk.download("stopwords")
+#nltk.download("punkt")
+#nltk.download("stopwords")
 
 # Reads each file in directory and adds to list that will be returned
 def readFiles(filePath):
@@ -83,36 +75,34 @@ for x in labeledReviews:
                 dictionary[stemmed] = con
     data.append((dictionary, x[1]))
 
-
-
-
 #print(data)
+
 # Randomizing and splitting data for training and testing
 random.shuffle(data)
 training = data[0:(int)(len(labeledReviews)/2)]
 testing = data[(int)(len(labeledReviews)/2):]
 
-# NB Classifer
+# NB classifer training w/ training dataset
 classifier = nltk.NaiveBayesClassifier.train(training)
+
+# Most informative features from NB classifier
 classifier.show_most_informative_features()
 
 truesets = collections.defaultdict(set)
 classifiersets =  collections.defaultdict(set)
-# you want to look at precision and recall in both training anf testing
-# if your performnace is really good in training but horrible in testing
-# that means your model is overfitted
 
+# Run NB classifer over testing dataset
 for i, (doc, label) in enumerate(testing):
   #run your classifier over testing dataset to see the peromance
   truesets[label].add(i)
   observed = classifier.classify(doc)
   classifiersets[observed].add(i)
 
+# Shows true and classifer sets
 print(truesets)
 print(classifiersets)
-# [1, 3, 4, 5, 19, 45]
-# [2, 3, 4, 19, 25, 40]
 
+# Calculate positive/negative precision and recall
 pos_precision = precision(truesets['pos'], classifiersets['pos'])
 neg_precision = precision(truesets["neg"], classifiersets["neg"])
 pos_recall = recall(truesets['pos'], classifiersets['pos'])
