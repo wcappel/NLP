@@ -88,6 +88,29 @@ random.shuffle(data)
 training = data[0:(int)(len(labeledReviews)/2)]
 testing = data[(int)(len(labeledReviews)/2):]
 
+# Example of data format to work with
+#testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
+
+# Using the same split, reformat training and testing data for LR classifer
+lrTraining = []
+lrTesting = []
+
+for x in training:
+    newList = []
+    for key in x[0]:
+        newList.append(key)
+    bigList = [newList, x[1]]
+    lrTraining.append(bigList)
+
+print(lrTraining)
+
+for x in testing:
+    newList = []
+    for key in x[0]:
+        newList.append(key)
+    bigList = [newList, x[1]]
+    lrTesting.append(bigList)
+
 # NB classifer training w/ training dataset
 classifier = nltk.NaiveBayesClassifier.train(training)
 
