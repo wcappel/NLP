@@ -1,4 +1,3 @@
-
 import nltk
 import string
 import random
@@ -9,11 +8,15 @@ from pathlib import Path
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
+from nltk.corpus import opinion_lexicon
 
 #nltk.download("punkt")
 #nltk.download("stopwords")
+#nltk.download('opinion_lexicon')
 
 # Reads each file in directory and adds to list that will be returned
+
+
 def readFiles(filePath):
     strList = []
     for file in filePath:
@@ -22,6 +25,9 @@ def readFiles(filePath):
         current.close()
         strList.append(text)
     return strList
+
+
+# ! Potentially think about using ratings as a feature
 
 # 'Main' starts here:
 
@@ -65,15 +71,15 @@ stopwords = stopwords.words("english")
 #data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
 data = []
 porter = PorterStemmer()
-for x in labeledReviews:
+for document in labeledReviews:
     dictionary = {}
     for word in tokens:
         if word not in stopwords:
-            con = word in x[0]
+            valid = word in document[0]
             stemmed = porter.stem(word)
             if not dictionary.get(stemmed):
-                dictionary[stemmed] = con
-    data.append((dictionary, x[1]))
+                dictionary[stemmed] = valid
+    data.append((dictionary, document[1]))
 
 #print(data)
 
@@ -115,3 +121,23 @@ print("Positive recall: ")
 print(pos_recall)
 print("Negative recall: ")
 print(neg_recall)
+
+# Lexicons for LR features:
+
+nltkPosLex = opinion_lexicon.positive()
+nltkNegLex = opinion_lexicon.negative()
+posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
+negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
+
+# Method stems lexicons
+def lexStemmer(lexicon):
+    stemmedLexicon = []
+    for word in lexicon:
+        stemmedLexicon.append(porter.stem(word))
+    return stemmedLexicon
+
+
+stemmedPosLex = lexStemmer(posLex)
+stemmedNegLex = lexStemmer(negLex)
+
+# Classify fake reviews later
