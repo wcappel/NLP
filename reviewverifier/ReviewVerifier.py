@@ -87,7 +87,7 @@ tokens = set(word for words in labeledReviews for word in word_tokenize(words[0]
 #print(tokens)
 stopwords = stopwords.words("english")
 
-#Finish tokenization
+# Finish tokenization
 #data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
 data = []
 porter = PorterStemmer()
@@ -174,7 +174,7 @@ def calculateZ(w, x, b):
     dProd = numpy.dot(w, x)
     return dProd + b
 
-
+# Sigmoid funct. to fit btwn. 0 and 1
 def sigmoid(z):
     return 1.0 / (1.0 + math.exp(-z))
 
@@ -189,17 +189,17 @@ def probForClass(classVal, z):
         print("classVal must be 1 or 0")
 
 
-# Estimates class based on greater prob. of either pos or neg
+# Estimates class w/ prob. of neg and pos, using decision boundary
 def estimateClass(z):
-    if probForClass(1, z) > probForClass(0, z):
+    if probForClass(1, z) > 0.5:
         return 1
     else:
         return 0
 
 
 # Cost function:
-def calculateCost(estimatedProb, trueClass):
-    return -((trueClass * math.log(estimatedProb)) + ((1 - trueClass) * math.log(1 - estimatedProb)))
+def calculateCost(trueClass, z):
+    return -((trueClass * math.log(sigmoid(z))) + ((1 - trueClass) * math.log(1 - sigmoid(z))))
 
 
 #print(calculateCost(0.69, 0))
@@ -207,9 +207,10 @@ def calculateCost(estimatedProb, trueClass):
 # theta = (old) theta + stepSize * gradient
 # Gradient descent starts here:
 
-# xj = array of freq. of features, yActual = actual class (0 or 1)
+# xj = array of freq. of features, trueClass = actual class (0 or 1)
 #def gradientDesc(z, xj, trueClass):
 
 
 #stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
+# Use learning rate instead?
 
