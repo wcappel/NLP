@@ -3,6 +3,8 @@ import string
 import random
 import collections
 import nltk.metrics
+import math
+import numpy
 from nltk.metrics.scores import (precision, recall)
 from pathlib import Path
 from nltk.tokenize import word_tokenize
@@ -14,9 +16,8 @@ from nltk.corpus import opinion_lexicon
 #nltk.download("stopwords")
 #nltk.download('opinion_lexicon')
 
+
 # Reads each file in directory and adds to list that will be returned
-
-
 def readFiles(filePath):
     strList = []
     for file in filePath:
@@ -26,6 +27,25 @@ def readFiles(filePath):
         strList.append(text)
     return strList
 
+
+# Method for stemming a list derived from nltk lexicons
+def lexStemmer(lexicon):
+    stemmedLexicon = []
+    for word in lexicon:
+        stemmedLexicon.append(porter.stem(word))
+    return stemmedLexicon
+
+
+# Method that reformats nltk-NB-formatted dataset for our LR
+def reformatForLR(nbFormatted):
+    reformatted = []
+    for x in nbFormatted:
+        newList = []
+        for key in x[0]:
+            newList.append(key)
+        bigList = [newList, x[1]]
+        reformatted.append(bigList)
+    return reformatted
 
 # ! Potentially think about using ratings as a feature
 
@@ -91,25 +111,13 @@ testing = data[(int)(len(labeledReviews)/2):]
 # Example of data format to work with
 #testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
 
+
 # Using the same split, reformat training and testing data for LR classifer
-lrTraining = []
-lrTesting = []
+lrTraining = reformatForLR(training)
+lrTesting = reformatForLR(testing)
 
-for x in training:
-    newList = []
-    for key in x[0]:
-        newList.append(key)
-    bigList = [newList, x[1]]
-    lrTraining.append(bigList)
-
-print(lrTraining)
-
-for x in testing:
-    newList = []
-    for key in x[0]:
-        newList.append(key)
-    bigList = [newList, x[1]]
-    lrTesting.append(bigList)
+#print(lrTraining)
+#print(len(lrTraining))
 
 # NB classifer training w/ training dataset
 classifier = nltk.NaiveBayesClassifier.train(training)
@@ -152,15 +160,56 @@ nltkNegLex = opinion_lexicon.negative()
 posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
 negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
 
-# Method stems lexicons
-def lexStemmer(lexicon):
-    stemmedLexicon = []
-    for word in lexicon:
-        stemmedLexicon.append(porter.stem(word))
-    return stemmedLexicon
-
-
 stemmedPosLex = lexStemmer(posLex)
 stemmedNegLex = lexStemmer(negLex)
 
 # Classify fake reviews later
+
+# Optimize for 85% precision, 78% recall ?
+# Start w/ b == 0
+
+
+# z = w * x + b
+def calculateZ(w, x, b):
+    dProd = numpy.dot(w, x)
+    return dProd + b
+
+
+def sigmoid(z):
+    return 1.0 / (1.0 + math.exp(-z))
+
+
+# classVal is either 1 (pos) or 0 (neg),
+def probForClass(classVal, z):
+    if classVal == 1:
+        return sigmoid(z)
+    elif classVal == 0:
+        return 1.0 - sigmoid(z)
+    else:
+        print("classVal must be 1 or 0")
+
+
+# Estimates class based on greater prob. of either pos or neg
+def estimateClass(z):
+    if probForClass(1, z) > probForClass(0, z):
+        return 1
+    else:
+        return 0
+
+
+# Cost function:
+def calculateCost(estimatedProb, trueClass):
+    return -((trueClass * math.log(estimatedProb)) + ((1 - trueClass) * math.log(1 - estimatedProb)))
+
+
+#print(calculateCost(0.69, 0))
+
+# theta = (old) theta + stepSize * gradient
+# Gradient descent starts here:
+
+# xj = array of freq. of features, yActual = actual class (0 or 1)
+#def gradientDesc(z, xj, trueClass):
+
+
+#stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
+

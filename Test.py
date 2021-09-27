@@ -2,6 +2,8 @@ import nltk
 import ssl
 from nltk.corpus import opinion_lexicon
 from nltk.stem.porter import PorterStemmer
+import math
+import numpy
 
 # try:
 #     _create_unverified_https_context = ssl._create_unverified_context
@@ -22,12 +24,12 @@ from nltk.stem.porter import PorterStemmer
 testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'neg')]
 # lrTraining = [word for x[0], x[1]) for x in testData]
 
-lrTraining = []
-for x in testData:
-    newList = []
-    for key in x[0]:
-        newList.append(key)
-    bigList = [newList, x[1]]
-    lrTraining.append(bigList)
-
-print(lrTraining)
+# lrTraining = []
+# for x in testData:
+#     newList = []
+#     for key in x[0]:
+#         newList.append(key)
+#     bigList = [newList, x[1]]
+#     lrTraining.append(bigList)
+#
+# print(lrTraining)
