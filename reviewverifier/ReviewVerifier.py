@@ -204,13 +204,65 @@ def calculateCost(trueClass, z):
 
 #print(calculateCost(0.69, 0))
 
+#Feature table
+'''
+Feature:    Definition:                 Initial weight:
+f0          word ∈ pos. lexicon         1
+f1          word ∈ neg. lexicon         -1
+f2          bigrams "not good"          -3
+f3          bigrams "i like"            2
+f4          bigrams "not bad"           3
+f5          bigrams "dont like"         -3
+'''
+
+initialWeights = [1, -1, -3, 2, 3, -3]
+# Function that counts features in a review
+# Parameter 'review' will look like: (['A', 'sentence'], pos)
+def featureCount(review):
+    frequencies = [0, 0, 0, 0, 0, 0]
+    for word in review[0]:
+        if word in stemmedPosLex:
+            frequencies[0] += 1
+        elif word in stemmedNegLex:
+            frequencies[1] += 1
+    restrung = " ".join(review[0])
+    reviewBigrams = list(nltk.bigrams(restrung.split()))
+    for bigram in reviewBigrams:
+        print(bigram)
+        if bigram[0] == 'not' and bigram[1] == 'good':
+            frequencies[2] += 1
+        elif bigram[0] == 'i' and bigram[1] == 'like':
+            frequencies[3] += 1
+        elif bigram[0] == 'not' and bigram[1] == 'bad':
+            frequencies[4] += 1
+        elif bigram[0] == 'dont' and bigram[1] == 'like':
+            frequencies[5] += 1
+    return frequencies
+
 # theta = (old) theta + stepSize * gradient
 # Gradient descent starts here:
 
+
+'''
+Probably want to perform gradient descent on each document with its cost function return value?
+We then adjust weights using stepSizes/learning rate based on information such as feature
+count in the document? But then probably also want to some kind of total value/accuracy across
+all documents and use that to adjust.
+So input for each doc. would probably be:
+ weights = [w1, w2, ... wn]
+ bias
+ fCount = [f1, f2, ... fn]
+ calculateCost return value
+ estimated class
+ true/actual class
+ ... what else?
+'''
+
 # xj = array of freq. of features, trueClass = actual class (0 or 1)
-#def gradientDesc(z, xj, trueClass):
+#def gradientDesc(review, trueClass):
 
 
-#stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
+# stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
 # Use learning rate instead?
+learningRate = 0.1
 
