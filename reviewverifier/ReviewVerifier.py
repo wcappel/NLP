@@ -5,6 +5,7 @@ import collections
 import nltk.metrics
 import math
 import numpy
+import pandas
 from nltk.metrics.scores import (precision, recall)
 from pathlib import Path
 from nltk.tokenize import word_tokenize
@@ -47,6 +48,35 @@ def reformatForLR(nbFormatted):
         reformatted.append(bigList)
     return reformatted
 
+
+# Given a review, returns list of features counts with class appended
+def featureCount(review):
+    frequencies = [0, 0, 0, 0, 0, 0, 0]
+    for word in review[0]:
+        if word in stemmedPosLex:
+            frequencies[0] += 1
+        elif word in stemmedNegLex:
+            frequencies[1] += 1
+    restrung = " ".join(review[0])
+    reviewBigrams = list(nltk.bigrams(restrung.split()))
+    for bigram in reviewBigrams:
+        #print(bigram)
+        if bigram[0] == 'not' and bigram[1] == 'good':
+            frequencies[2] += 1
+        elif bigram[0] == 'i' and bigram[1] == 'like':
+            frequencies[3] += 1
+        elif bigram[0] == 'not' and bigram[1] == 'bad':
+            frequencies[4] += 1
+        elif bigram[0] == 'dont' and bigram[1] == 'like':
+            frequencies[5] += 1
+    if review[1] == 'pos':
+        frequencies[6] = 1
+    elif review[1] == 'neg':
+        frequencies[6] = 0
+    # print(frequencies)
+    return frequencies
+
+
 # ! Potentially think about using ratings as a feature
 
 # 'Main' starts here:
@@ -88,18 +118,19 @@ tokens = set(word for words in labeledReviews for word in word_tokenize(words[0]
 stopwords = stopwords.words("english")
 
 # Finish tokenization
-#data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
-data = []
 porter = PorterStemmer()
-for document in labeledReviews:
-    dictionary = {}
-    for word in tokens:
-        if word not in stopwords:
-            valid = word in document[0]
-            stemmed = porter.stem(word)
-            if not dictionary.get(stemmed):
-                dictionary[stemmed] = valid
-    data.append((dictionary, document[1]))
+data = [({porter.stem(word): (word in word_tokenize(x[0])) for word in tokens if word not in stopwords}, x[1]) for x in labeledReviews]
+#test   [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
+
+# for document in labeledReviews:
+#     dictionary = {}
+#     for word in tokens:
+#         if word not in stopwords:
+#             valid = word in document[0]
+#             stemmed = porter.stem(word)
+#             if not dictionary.get(stemmed):
+#                 dictionary[stemmed] = valid
+#     data.append((dictionary, document[1]))
 
 #print(data)
 
@@ -107,14 +138,16 @@ for document in labeledReviews:
 random.shuffle(data)
 training = data[0:(int)(len(labeledReviews)/2)]
 testing = data[(int)(len(labeledReviews)/2):]
-
-# Example of data format to work with
-#testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
-
-
-# Using the same split, reformat training and testing data for LR classifer
-lrTraining = reformatForLR(training)
-lrTesting = reformatForLR(testing)
+#
+# # Example of data format to work with
+# #testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
+#
+#
+# # Using the same split, reformat training and testing data for LR classifer
+# lrTraining = reformatForLR(training)
+# lrTesting = reformatForLR(testing)
+debugging = data[0:(int)(len(labeledReviews)/250)]
+print(debugging)
 
 #print(lrTraining)
 #print(len(lrTraining))
@@ -169,39 +202,6 @@ stemmedNegLex = lexStemmer(negLex)
 # Start w/ b == 0
 
 
-# z = w * x + b
-def calculateZ(w, x, b):
-    dProd = numpy.dot(w, x)
-    return dProd + b
-
-# Sigmoid funct. to fit btwn. 0 and 1
-def sigmoid(z):
-    return 1.0 / (1.0 + math.exp(-z))
-
-
-# classVal is either 1 (pos) or 0 (neg),
-def probForClass(classVal, z):
-    if classVal == 1:
-        return sigmoid(z)
-    elif classVal == 0:
-        return 1.0 - sigmoid(z)
-    else:
-        print("classVal must be 1 or 0")
-
-
-# Estimates class w/ prob. of neg and pos, using decision boundary
-def estimateClass(z):
-    if probForClass(1, z) > 0.5:
-        return 1
-    else:
-        return 0
-
-
-# Cost function:
-def calculateCost(trueClass, z):
-    return -((trueClass * math.log(sigmoid(z))) + ((1 - trueClass) * math.log(1 - sigmoid(z))))
-
-
 #print(calculateCost(0.69, 0))
 
 #Feature table
@@ -218,26 +218,19 @@ f5          bigrams "dont like"         -3
 initialWeights = [1, -1, -3, 2, 3, -3]
 # Function that counts features in a review
 # Parameter 'review' will look like: (['A', 'sentence'], pos)
-def featureCount(review):
-    frequencies = [0, 0, 0, 0, 0, 0]
-    for word in review[0]:
-        if word in stemmedPosLex:
-            frequencies[0] += 1
-        elif word in stemmedNegLex:
-            frequencies[1] += 1
-    restrung = " ".join(review[0])
-    reviewBigrams = list(nltk.bigrams(restrung.split()))
-    for bigram in reviewBigrams:
-        print(bigram)
-        if bigram[0] == 'not' and bigram[1] == 'good':
-            frequencies[2] += 1
-        elif bigram[0] == 'i' and bigram[1] == 'like':
-            frequencies[3] += 1
-        elif bigram[0] == 'not' and bigram[1] == 'bad':
-            frequencies[4] += 1
-        elif bigram[0] == 'dont' and bigram[1] == 'like':
-            frequencies[5] += 1
-    return frequencies
+
+formattedTraining = []
+for review in debugging:
+    formattedTraining.append(featureCount(review))
+# print(formattedTraining)
+
+# formattedTesting = []
+# for review in lrTesting:
+#     formattedTesting.append(featureCount(review))
+
+dataFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
+print(dataFrame)
+
 
 # theta = (old) theta + stepSize * gradient
 # Gradient descent starts here:
@@ -258,11 +251,46 @@ So input for each doc. would probably be:
  ... what else?
 '''
 
+# # z = w * x + b
+# def calculateZ(w, x, b):
+#     dProd = numpy.dot(w, x)
+#     return dProd + b
+#
+# # Sigmoid funct. to fit btwn. 0 and 1
+# def sigmoid(z):
+#     return 1.0 / (1.0 + math.exp(-z))
+#
+#
+# # classVal is either 1 (pos) or 0 (neg),
+# def probForClass(classVal, z):
+#     if classVal == 1:
+#         return sigmoid(z)
+#     elif classVal == 0:
+#         return 1.0 - sigmoid(z)
+#     else:
+#         print("classVal must be 1 or 0")
+#
+#
+# # Estimates class w/ prob. of neg and pos, using decision boundary
+# def estimateClass(z):
+#     if probForClass(1, z) > 0.5:
+#         return 1
+#     else:
+#         return 0
+#
+#
+# # Cost function:
+# def calculateCost(trueClass, z):
+#     return -((trueClass * math.log(sigmoid(z))) + ((1 - trueClass) * math.log(1 - sigmoid(z))))
+
+
 # xj = array of freq. of features, trueClass = actual class (0 or 1)
 #def gradientDesc(review, trueClass):
 
 
 # stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
 # Use learning rate instead?
-learningRate = 0.1
+# learningRate = 0.1
+
+
 
