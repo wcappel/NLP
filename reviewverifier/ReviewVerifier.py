@@ -37,6 +37,7 @@ def lexStemmer(lexicon):
     return stemmedLexicon
 
 
+# testData = [({'This': False, 'not': False,'good': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'neg')]
 # Method that reformats nltk-NB-formatted dataset for our LR
 def reformatForLR(nbFormatted):
     reformatted = []
@@ -119,25 +120,29 @@ stopwords = stopwords.words("english")
 
 # Finish tokenization
 porter = PorterStemmer()
-data = [({porter.stem(word): (word in word_tokenize(x[0])) for word in tokens if word not in stopwords}, x[1]) for x in labeledReviews]
+#data = [({porter.stem(word): (word in word_tokenize(x[0])) for word in tokens if word not in stopwords }, x[1]) for x in labeledReviews]
 #test   [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
 
-# for document in labeledReviews:
-#     dictionary = {}
-#     for word in tokens:
-#         if word not in stopwords:
-#             valid = word in document[0]
-#             stemmed = porter.stem(word)
-#             if not dictionary.get(stemmed):
-#                 dictionary[stemmed] = valid
-#     data.append((dictionary, document[1]))
+data = []
+for document in labeledReviews:
+    dictionary = {}
+    for word in tokens:
+        if word not in stopwords:
+            valid = word in document[0]
+            stemmed = porter.stem(word)
+            if not dictionary.get(stemmed):
+                dictionary[stemmed] = valid
+    data.append((dictionary, document[1]))
+print("finished formatting data for NB")
+
 
 #print(data)
 
 # Randomizing and splitting data for training and testing
 random.shuffle(data)
-training = data[0:(int)(len(labeledReviews)/2)]
-testing = data[(int)(len(labeledReviews)/2):]
+# training = data[0:(int)(len(labeledReviews)/2)]
+# testing = data[(int)(len(labeledReviews)/2):]
+debugging = data[0:(int)(len(labeledReviews)/250)]
 #
 # # Example of data format to work with
 # #testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
@@ -146,45 +151,46 @@ testing = data[(int)(len(labeledReviews)/2):]
 # # Using the same split, reformat training and testing data for LR classifer
 # lrTraining = reformatForLR(training)
 # lrTesting = reformatForLR(testing)
-debugging = data[0:(int)(len(labeledReviews)/250)]
+lrDebugging = reformatForLR(debugging)
 print(debugging)
+print("finished formatting data for LR")
 
 #print(lrTraining)
 #print(len(lrTraining))
 
-# NB classifer training w/ training dataset
-classifier = nltk.NaiveBayesClassifier.train(training)
-
-# Most informative features from NB classifier
-classifier.show_most_informative_features()
-
-truesets = collections.defaultdict(set)
-classifiersets =  collections.defaultdict(set)
-
-# Run NB classifer over testing dataset
-for i, (doc, label) in enumerate(testing):
-  #run your classifier over testing dataset to see the peromance
-  truesets[label].add(i)
-  observed = classifier.classify(doc)
-  classifiersets[observed].add(i)
-
-# Shows true and classifer sets
-print(truesets)
-print(classifiersets)
-
-# Calculate positive/negative precision and recall
-pos_precision = precision(truesets['pos'], classifiersets['pos'])
-neg_precision = precision(truesets["neg"], classifiersets["neg"])
-pos_recall = recall(truesets['pos'], classifiersets['pos'])
-neg_recall = recall(truesets["neg"], classifiersets["neg"])
-print("Positive precision: ")
-print(pos_precision)
-print("Negative precision: ")
-print(neg_precision)
-print("Positive recall: ")
-print(pos_recall)
-print("Negative recall: ")
-print(neg_recall)
+# # NB classifer training w/ training dataset
+# classifier = nltk.NaiveBayesClassifier.train(training)
+#
+# # Most informative features from NB classifier
+# classifier.show_most_informative_features()
+#
+# truesets = collections.defaultdict(set)
+# classifiersets =  collections.defaultdict(set)
+#
+# # Run NB classifer over testing dataset
+# for i, (doc, label) in enumerate(testing):
+#   #run your classifier over testing dataset to see the peromance
+#   truesets[label].add(i)
+#   observed = classifier.classify(doc)
+#   classifiersets[observed].add(i)
+#
+# # Shows true and classifer sets
+# print(truesets)
+# print(classifiersets)
+#
+# # Calculate positive/negative precision and recall
+# pos_precision = precision(truesets['pos'], classifiersets['pos'])
+# neg_precision = precision(truesets["neg"], classifiersets["neg"])
+# pos_recall = recall(truesets['pos'], classifiersets['pos'])
+# neg_recall = recall(truesets["neg"], classifiersets["neg"])
+# print("Positive precision: ")
+# print(pos_precision)
+# print("Negative precision: ")
+# print(neg_precision)
+# print("Positive recall: ")
+# print(pos_recall)
+# print("Negative recall: ")
+# print(neg_recall)
 
 # Lexicons for LR features:
 

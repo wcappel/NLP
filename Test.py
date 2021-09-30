@@ -46,12 +46,7 @@ print(stemmedNegLex)
 # testData = [({'This': False, 'not': False,'good': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'neg')]
 # #
 # lrTraining = []
-# for x in testData:
-#     newList = []
-#     for key in x[0]:
-#         newList.append(key)
-#     bigList = [newList, x[1]]
-#     lrTraining.append(bigList)
+
 
 lrTraining = [(['i', 'dont', 'like', 'it'], 'neg'), (['i', 'like', 'it', 'very', 'awesom'], 'pos'), (['terrible', 'product', 'not', 'good'], 'neg')]
 
