@@ -101,28 +101,17 @@ noPunctPos = []
 noPunctNeg = []
 
 # Loops case fold documents and remove punctuation
-# for document in labeledPosReviews:
-#     document = document.lower()
-#     document = "".join([char for char in document if char not in string.punctuation])
-#     labeledReviews.append((document, "pos"))
-#
-# for document in labeledNegReviews:
-#     document = document.lower()
-#     document = "".join([char for char in document if char not in string.punctuation])
-#     labeledReviews.append((document, "neg"))
-
-# Debug
-labeledPosReviews = []
-labeledPosReviews = []
 for document in labeledPosReviews:
-        document = document.lower()
-        document = "".join([char for char in document if char not in string.punctuation])
-        labeledReviews.append((document, "pos"))
+    document = document.lower()
+    document = "".join([char for char in document if char not in string.punctuation])
+    labeledReviews.append((document, "pos"))
 
 for document in labeledNegReviews:
-        document = document.lower()
-        document = "".join([char for char in document if char not in string.punctuation])
-        labeledReviews.append((document, "neg"))
+    document = document.lower()
+    document = "".join([char for char in document if char not in string.punctuation])
+    labeledReviews.append((document, "neg"))
+
+# Debug
 
 #print(labeledReviews)
 
@@ -138,27 +127,28 @@ porter = PorterStemmer()
 #test   [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
 
 data = []
-# for document in labeledReviews:
-#     dictionary = {}
-#     for word in tokens:
-#         if word not in stopwords:
-#             valid = word in document[0]
-#             stemmed = porter.stem(word)
-#             if not dictionary.get(stemmed):
-#                 dictionary[stemmed] = valid
-#     data.append((dictionary, document[1]))
-# print("finished formatting data for NB")
-
 for document in labeledReviews:
     dictionary = {}
     for word in tokens:
         if word not in stopwords:
-            if word in tokens:
-                dictionary[word] = True
-            else:
-                dictionary[word] = False
+            valid = word in document[0]
+            stemmed = porter.stem(word)
+            if not dictionary.get(stemmed):
+                dictionary[stemmed] = valid
     data.append((dictionary, document[1]))
 print("finished formatting data for NB")
+
+# data = []
+# for document in labeledReviews:
+#     dictionary = {}
+#     tokens = set(word for words in document)
+#     for word in tokens:
+#         if word not in stopwords:
+#             if word in tokens:
+#                 stemmed = porter.stem(word)
+#                 dictionary[stemmed] = word in word_tokenize(document[0])
+#     data.append((dictionary, document[1]))
+# print("finished formatting data for NB")
 
 #print(data)
 

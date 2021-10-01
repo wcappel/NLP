@@ -9,7 +9,6 @@ from sklearn.linear_model import LogisticRegression
 import pandas
 import matplotlib.pyplot as plt
 
-
 # try:
 #     _create_unverified_https_context = ssl._create_unverified_context
 # except AttributeError:
