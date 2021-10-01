@@ -90,8 +90,8 @@ nltkNegLex = opinion_lexicon.negative()
 posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
 negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
 
-stemmedPosLex = lexStemmer(posLex)
-stemmedNegLex = lexStemmer(negLex)
+stemmedPosLex = set(lexStemmer(posLex))
+stemmedNegLex = set(lexStemmer(negLex))
 
 # File paths for each labeled directory w/ only txt files selected
 negFolder = Path('./neg/').rglob('*.txt')
@@ -156,7 +156,7 @@ for document in labeledReviews:
         if word not in dictionary:
             dictionary[word] = valid
     data.append((dictionary, document[1]))
-print(data)
+#print(data)
 print("finished formatting data for NB.")
 
 
@@ -175,8 +175,8 @@ lrTraining = reformatForLR(training)
 lrTesting = reformatForLR(testing)
 #lrDebugging = reformatForLR(debugging)
 #print(lrTraining)
-# print(lrTraining)
-print("finished formatting data for LR")
+#print(lrTraining)
+#print("finished formatting data for LR")
 
 #print(lrTraining)
 print(len(lrTraining))
@@ -189,7 +189,7 @@ print("NB Results:")
 classifier.show_most_informative_features()
 
 truesets = collections.defaultdict(set)
-classifiersets =  collections.defaultdict(set)
+classifiersets = collections.defaultdict(set)
 
 # Run NB classifer over testing dataset
 for i, (doc, label) in enumerate(testing):
