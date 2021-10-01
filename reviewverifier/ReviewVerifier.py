@@ -37,27 +37,25 @@ def lexStemmer(lexicon):
     return stemmedLexicon
 
 
-# testData = [({'This': False, 'not': False,'good': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'neg')]
 # Method that reformats nltk-NB-formatted dataset for our LR
-def reformatForLR(nbFormatted):
+#labeledReviews = [('text', 'tag'), ('text', 'tag')]
+# want it to look like: [('a', 'sentence', 'here',), 'pos']
+def reformatForLR(notFormatted):
     reformatted = []
-    for x in nbFormatted:
-        newList = []
-        for key in x[0]:
-            newList.append(key)
-        bigList = [newList, x[1]]
+    for rev in notFormatted:
+        bigList = [word_tokenize(rev[0]), rev[1]]
         reformatted.append(bigList)
     return reformatted
 
 
 # Given a review, returns list of features counts with class appended
 # Parameter 'review' will look like: (['A', 'sentence'], pos)
-def featureCount(review):
+def featureCount(x):
     frequencies = [0, 0, 0, 0, 0, 0, 0]
-    for word in review[0]:
-        if word in stemmedPosLex:
+    for w in x[0]:
+        if w in stemmedPosLex:
             frequencies[0] += 1
-        elif word in stemmedNegLex:
+        elif w in stemmedNegLex:
             frequencies[1] += 1
     # restrung = " ".join(review[0])
     # reviewBigrams = list(nltk.bigrams(restrung.split()))
@@ -71,10 +69,10 @@ def featureCount(review):
     #         frequencies[4] += 1
     #     elif bigram[0] == 'dont' and bigram[1] == 'like':
     #         frequencies[5] += 1
-    # if review[1] == 'pos':
-    #     frequencies[6] = 1
-    # elif review[1] == 'neg':
-    #     frequencies[6] = 0
+    if x[1] == 'pos':
+        frequencies[6] = 1
+    elif x[1] == 'neg':
+        frequencies[6] = 0
     # print(frequencies)
     return frequencies
 
@@ -84,6 +82,7 @@ def featureCount(review):
 # 'Main' starts here:
 
 # Lexicons for LR features:
+print("formatting lexicons...")
 porter = PorterStemmer()
 nltkPosLex = opinion_lexicon.positive()
 nltkNegLex = opinion_lexicon.negative()
@@ -98,6 +97,7 @@ negFolder = Path('./neg/').rglob('*.txt')
 posFolder = Path('./pos/').rglob('*.txt')
 
 # Lists of every txt file in each folder
+print("reading files...")
 negFiles = [x for x in negFolder]
 posFiles = [y for y in posFolder]
 
@@ -108,6 +108,7 @@ labeledReviews = []
 posReviews = []
 negReviews = []
 
+print("preprocessing data...")
 # Loops case fold documents and remove punctuation
 for document in labeledPosReviews:
     document = document.lower()
@@ -138,51 +139,71 @@ for document in negReviews:
 #print(labeledReviews)
 # No duplicates here!
 
-# Tokenization
-tokens = set(word for words in labeledReviews for word in word_tokenize(words[0]))
-#print(tokens)
+# Randomizing and splitting data for training and testing
+random.shuffle(labeledReviews)
 
+training = labeledReviews[0:(int)(len(labeledReviews)/2)]
+testing = labeledReviews[(int)(len(labeledReviews)/2):]
+
+# Tokenization
+trainTokens = set(word for words in training for word in word_tokenize(words[0]))
+testTokens = set(word for words in testing for word in word_tokenize(words[0]))
 
 # Finish tokenization
-#data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
+
 #test   [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
 
+#labeledReviews = [('text', 'tag'), ('text', 'tag')]
 print("started formatting data for NB classifier...")
-data = []
+nbTrainData = []
+nbTestData = []
+# # FIX THIS IT IS CAUSING DUPLICATES
 for document in labeledReviews:
     dictionary = {}
-    for word in tokens:
+    doc_tokens = word_tokenize(document[0])
+    for word in trainTokens:
         valid = word in document[0]
         if word not in dictionary:
             dictionary[word] = valid
-    data.append((dictionary, document[1]))
-#print(data)
+    nbTrainData.append((dictionary, document[1]))
+
+for document in labeledReviews:
+    dictionary = {}
+    for word in testTokens:
+        valid = word in document[0]
+        if word not in dictionary:
+            dictionary[word] = valid
+    nbTestData.append((dictionary, document[1]))
+# data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
+#
+# for x in labeledReviews:
+#     data.append(({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]))
+
+# for x in training:
+#     doc_tokens = word_tokenize(x[0])
+#     dictionary = {word: (word in doc_tokens) for word in trainTokens}
+#     newTup = (dictionary, x[1])
+#     nbTrainData.append(newTup)
+#
+# for x in testing:
+#     doc_tokens = word_tokenize(x[0])
+#     dictionary = {word: (word in doc_tokens) for word in testTokens}
+#     newTup = (dictionary, x[1])
+#     nbTestData.append(newTup)
+
+print(nbTrainData)
+
 print("finished formatting data for NB.")
-
-
-# Randomizing and splitting data for training and testing
-random.shuffle(data)
-training = data[0:(int)(len(labeledReviews)/2)]
-testing = data[(int)(len(labeledReviews)/2):]
 
 
 # Example of data format to work with
 # testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
 
 
-# # Using the same split, reformat training and testing data for LR classifer
-lrTraining = reformatForLR(training)
-lrTesting = reformatForLR(testing)
-#lrDebugging = reformatForLR(debugging)
-#print(lrTraining)
-#print(lrTraining)
-#print("finished formatting data for LR")
-
-#print(lrTraining)
-print(len(lrTraining))
 
 # NB classifer training w/ training dataset
-classifier = nltk.NaiveBayesClassifier.train(training)
+print("training NB classifier...")
+classifier = nltk.NaiveBayesClassifier.train(nbTrainData)
 
 # Most informative features from NB classifier
 print("NB Results:")
@@ -192,7 +213,7 @@ truesets = collections.defaultdict(set)
 classifiersets = collections.defaultdict(set)
 
 # Run NB classifer over testing dataset
-for i, (doc, label) in enumerate(testing):
+for i, (doc, label) in enumerate(nbTestData):
   #run your classifier over testing dataset to see the peromance
   truesets[label].add(i)
   observed = classifier.classify(doc)
@@ -203,6 +224,7 @@ print(truesets)
 print(classifiersets)
 
 # Calculate positive/negative precision and recall
+print("evaluating classifier...")
 pos_precision = precision(truesets['pos'], classifiersets['pos'])
 neg_precision = precision(truesets["neg"], classifiersets["neg"])
 pos_recall = recall(truesets['pos'], classifiersets['pos'])
@@ -230,11 +252,19 @@ f5          bigrams "dont like"         -3
 '''
 # initialWeights = [1, -1, -3, 2, 3, -3]
 
+# Using the same split, reformat training and testing data for LR classifer
+print("formatting data for LR...")
+lrTraining = reformatForLR(training)
+lrTesting = reformatForLR(testing)
+print(lrTraining)
+print("finished formatting data for LR.")
+
 formattedTraining = []
 print("counting features for LR classifier...")
 for review in lrTraining:
+    # print(review)
     formattedTraining.append(featureCount(review))
-    print("counted a review's features")
+    #print("counted a review's features")
 # print(formattedTraining)
 
 formattedTesting = []
@@ -246,65 +276,65 @@ dataFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4',
 print(dataFrame)
 
 
-# theta = (old) theta + stepSize * gradient
-# Gradient descent starts here:
-
-
-'''
-Probably want to perform gradient descent on each document with its cost function return value?
-We then adjust weights using stepSizes/learning rate based on information such as feature
-count in the document? But then probably also want to some kind of total value/accuracy across
-all documents and use that to adjust.
-So input for each doc. would probably be:
- weights = [w1, w2, ... wn]
- bias
- fCount = [f1, f2, ... fn]
- calculateCost return value
- estimated class
- true/actual class
- ... what else?
-'''
-
-# # z = w * x + b
-# def calculateZ(w, x, b):
-#     dProd = numpy.dot(w, x)
-#     return dProd + b
-#
-# # Sigmoid funct. to fit btwn. 0 and 1
-# def sigmoid(z):
-#     return 1.0 / (1.0 + math.exp(-z))
+# # theta = (old) theta + stepSize * gradient
+# # Gradient descent starts here:
 #
 #
-# # classVal is either 1 (pos) or 0 (neg),
-# def probForClass(classVal, z):
-#     if classVal == 1:
-#         return sigmoid(z)
-#     elif classVal == 0:
-#         return 1.0 - sigmoid(z)
-#     else:
-#         print("classVal must be 1 or 0")
+# '''
+# Probably want to perform gradient descent on each document with its cost function return value?
+# We then adjust weights using stepSizes/learning rate based on information such as feature
+# count in the document? But then probably also want to some kind of total value/accuracy across
+# all documents and use that to adjust.
+# So input for each doc. would probably be:
+#  weights = [w1, w2, ... wn]
+#  bias
+#  fCount = [f1, f2, ... fn]
+#  calculateCost return value
+#  estimated class
+#  true/actual class
+#  ... what else?
+# '''
+#
+# # # z = w * x + b
+# # def calculateZ(w, x, b):
+# #     dProd = numpy.dot(w, x)
+# #     return dProd + b
+# #
+# # # Sigmoid funct. to fit btwn. 0 and 1
+# # def sigmoid(z):
+# #     return 1.0 / (1.0 + math.exp(-z))
+# #
+# #
+# # # classVal is either 1 (pos) or 0 (neg),
+# # def probForClass(classVal, z):
+# #     if classVal == 1:
+# #         return sigmoid(z)
+# #     elif classVal == 0:
+# #         return 1.0 - sigmoid(z)
+# #     else:
+# #         print("classVal must be 1 or 0")
+# #
+# #
+# # # Estimates class w/ prob. of neg and pos, using decision boundary
+# # def estimateClass(z):
+# #     if probForClass(1, z) > 0.5:
+# #         return 1
+# #     else:
+# #         return 0
+# #
+# #
+# # # Cost function:
+# # def calculateCost(trueClass, z):
+# #     return -((trueClass * math.log(sigmoid(z))) + ((1 - trueClass) * math.log(1 - sigmoid(z))))
 #
 #
-# # Estimates class w/ prob. of neg and pos, using decision boundary
-# def estimateClass(z):
-#     if probForClass(1, z) > 0.5:
-#         return 1
-#     else:
-#         return 0
+# # xj = array of freq. of features, trueClass = actual class (0 or 1)
+# #def gradientDesc(review, trueClass):
 #
 #
-# # Cost function:
-# def calculateCost(trueClass, z):
-#     return -((trueClass * math.log(sigmoid(z))) + ((1 - trueClass) * math.log(1 - sigmoid(z))))
-
-
-# xj = array of freq. of features, trueClass = actual class (0 or 1)
-#def gradientDesc(review, trueClass):
-
-
-# stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
-# Use learning rate instead?
-# learningRate = 0.1
+# # stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
+# # Use learning rate instead?
+# # learningRate = 0.1
 
 
 
