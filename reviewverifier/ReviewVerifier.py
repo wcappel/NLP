@@ -57,18 +57,18 @@ def featureCount(x):
             frequencies[0] += 1
         elif w in stemmedNegLex:
             frequencies[1] += 1
-    # restrung = " ".join(review[0])
-    # reviewBigrams = list(nltk.bigrams(restrung.split()))
-    # for bigram in reviewBigrams:
-    #     #print(bigram)
-    #     if bigram[0] == 'not' and bigram[1] == 'good':
-    #         frequencies[2] += 1
-    #     elif bigram[0] == 'i' and bigram[1] == 'like':
-    #         frequencies[3] += 1
-    #     elif bigram[0] == 'not' and bigram[1] == 'bad':
-    #         frequencies[4] += 1
-    #     elif bigram[0] == 'dont' and bigram[1] == 'like':
-    #         frequencies[5] += 1
+    restrung = " ".join(review[0])
+    reviewBigrams = list(nltk.bigrams(restrung.split()))
+    for bigram in reviewBigrams:
+        #print(bigram)
+        if bigram[0] == 'not' and bigram[1] == 'good':
+            frequencies[2] += 1
+        elif bigram[0] == 'i' and bigram[1] == 'like':
+            frequencies[3] += 1
+        elif bigram[0] == 'not' and bigram[1] == 'bad':
+            frequencies[4] += 1
+        elif bigram[0] == 'dont' and bigram[1] == 'like':
+            frequencies[5] += 1
     if x[1] == 'pos':
         frequencies[6] = 1
     elif x[1] == 'neg':
@@ -108,8 +108,8 @@ labeledReviews = []
 posReviews = []
 negReviews = []
 
-print("preprocessing data...")
 # Loops case fold documents and remove punctuation
+print("preprocessing data...")
 for document in labeledPosReviews:
     document = document.lower()
     document = "".join([char for char in document if char not in string.punctuation])
@@ -120,10 +120,8 @@ for document in labeledNegReviews:
     document = "".join([char for char in document if char not in string.punctuation])
     negReviews.append(document)
 
-#print(posReviews)
-
+# Remove stop words
 stopWords = stopwords.words()
-
 for document in posReviews:
     for word in document:
         if word not in stopWords:
@@ -141,65 +139,31 @@ for document in negReviews:
 
 # Randomizing and splitting data for training and testing
 random.shuffle(labeledReviews)
-
 training = labeledReviews[0:(int)(len(labeledReviews)/2)]
 testing = labeledReviews[(int)(len(labeledReviews)/2):]
 
-# Tokenization
+# Generating tokens
 trainTokens = set(word for words in training for word in word_tokenize(words[0]))
 testTokens = set(word for words in testing for word in word_tokenize(words[0]))
 
-# Finish tokenization
-
-#test   [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
-
-#labeledReviews = [('text', 'tag'), ('text', 'tag')]
+# Tokenizing and formatting for NB
 print("started formatting data for NB classifier...")
 nbTrainData = []
 nbTestData = []
-# # FIX THIS IT IS CAUSING DUPLICATES
-for document in labeledReviews:
-    dictionary = {}
-    doc_tokens = word_tokenize(document[0])
-    for word in trainTokens:
-        valid = word in document[0]
-        if word not in dictionary:
-            dictionary[word] = valid
-    nbTrainData.append((dictionary, document[1]))
 
-for document in labeledReviews:
-    dictionary = {}
-    for word in testTokens:
-        valid = word in document[0]
-        if word not in dictionary:
-            dictionary[word] = valid
-    nbTestData.append((dictionary, document[1]))
-# data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
-#
-# for x in labeledReviews:
-#     data.append(({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]))
+for x in training:
+    doc_tokens = word_tokenize(x[0])
+    dictionary = {word: (word in doc_tokens) for word in trainTokens}
+    newTup = (dictionary, x[1])
+    nbTrainData.append(newTup)
 
-# for x in training:
-#     doc_tokens = word_tokenize(x[0])
-#     dictionary = {word: (word in doc_tokens) for word in trainTokens}
-#     newTup = (dictionary, x[1])
-#     nbTrainData.append(newTup)
-#
-# for x in testing:
-#     doc_tokens = word_tokenize(x[0])
-#     dictionary = {word: (word in doc_tokens) for word in testTokens}
-#     newTup = (dictionary, x[1])
-#     nbTestData.append(newTup)
-
-print(nbTrainData)
+for x in testing:
+    doc_tokens = word_tokenize(x[0])
+    dictionary = {word: (word in doc_tokens) for word in testTokens}
+    newTup = (dictionary, x[1])
+    nbTestData.append(newTup)
 
 print("finished formatting data for NB.")
-
-
-# Example of data format to work with
-# testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
-
-
 
 # NB classifer training w/ training dataset
 print("training NB classifier...")
@@ -220,8 +184,8 @@ for i, (doc, label) in enumerate(nbTestData):
   classifiersets[observed].add(i)
 
 # Shows true and classifer sets
-print(truesets)
-print(classifiersets)
+#print(truesets)
+#print(classifiersets)
 
 # Calculate positive/negative precision and recall
 print("evaluating classifier...")
