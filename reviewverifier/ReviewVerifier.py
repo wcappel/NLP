@@ -59,22 +59,22 @@ def featureCount(review):
             frequencies[0] += 1
         elif word in stemmedNegLex:
             frequencies[1] += 1
-    restrung = " ".join(review[0])
-    reviewBigrams = list(nltk.bigrams(restrung.split()))
-    for bigram in reviewBigrams:
-        #print(bigram)
-        if bigram[0] == 'not' and bigram[1] == 'good':
-            frequencies[2] += 1
-        elif bigram[0] == 'i' and bigram[1] == 'like':
-            frequencies[3] += 1
-        elif bigram[0] == 'not' and bigram[1] == 'bad':
-            frequencies[4] += 1
-        elif bigram[0] == 'dont' and bigram[1] == 'like':
-            frequencies[5] += 1
-    if review[1] == 'pos':
-        frequencies[6] = 1
-    elif review[1] == 'neg':
-        frequencies[6] = 0
+    # restrung = " ".join(review[0])
+    # reviewBigrams = list(nltk.bigrams(restrung.split()))
+    # for bigram in reviewBigrams:
+    #     #print(bigram)
+    #     if bigram[0] == 'not' and bigram[1] == 'good':
+    #         frequencies[2] += 1
+    #     elif bigram[0] == 'i' and bigram[1] == 'like':
+    #         frequencies[3] += 1
+    #     elif bigram[0] == 'not' and bigram[1] == 'bad':
+    #         frequencies[4] += 1
+    #     elif bigram[0] == 'dont' and bigram[1] == 'like':
+    #         frequencies[5] += 1
+    # if review[1] == 'pos':
+    #     frequencies[6] = 1
+    # elif review[1] == 'neg':
+    #     frequencies[6] = 0
     # print(frequencies)
     return frequencies
 
@@ -82,6 +82,16 @@ def featureCount(review):
 # ! Potentially think about using ratings as a feature
 
 # 'Main' starts here:
+
+# Lexicons for LR features:
+porter = PorterStemmer()
+nltkPosLex = opinion_lexicon.positive()
+nltkNegLex = opinion_lexicon.negative()
+posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
+negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
+
+stemmedPosLex = lexStemmer(posLex)
+stemmedNegLex = lexStemmer(negLex)
 
 # File paths for each labeled directory w/ only txt files selected
 negFolder = Path('./neg/').rglob('*.txt')
@@ -95,105 +105,103 @@ labeledPosReviews = readFiles(posFiles)
 labeledNegReviews = readFiles(negFiles)
 labeledReviews = []
 
-#print(labeledPosReviews)
-
-noPunctPos = []
-noPunctNeg = []
+posReviews = []
+negReviews = []
 
 # Loops case fold documents and remove punctuation
 for document in labeledPosReviews:
     document = document.lower()
     document = "".join([char for char in document if char not in string.punctuation])
-    labeledReviews.append((document, "pos"))
+    posReviews.append(document)
 
 for document in labeledNegReviews:
     document = document.lower()
     document = "".join([char for char in document if char not in string.punctuation])
+    negReviews.append(document)
+
+#print(posReviews)
+
+stopWords = stopwords.words()
+
+for document in posReviews:
+    for word in document:
+        if word not in stopWords:
+            newDoc = " ".join(porter.stem(word))
+    labeledReviews.append((document, "pos"))
+
+for document in negReviews:
+    for word in document:
+        if word not in stopWords:
+            newDoc = " ".join(porter.stem(word))
     labeledReviews.append((document, "neg"))
 
-# Debug
-
 #print(labeledReviews)
+# No duplicates here!
 
 # Tokenization
-#words = word_tokenize(text)
 tokens = set(word for words in labeledReviews for word in word_tokenize(words[0]))
 #print(tokens)
-stopwords = stopwords.words("english")
+
 
 # Finish tokenization
-porter = PorterStemmer()
-#data = [({porter.stem(word): (word in word_tokenize(x[0])) for word in tokens if word not in stopwords}, x[1]) for x in labeledReviews]
+#data = [({word: (word in word_tokenize(x[0])) for word in tokens}, x[1]) for x in labeledReviews]
 #test   [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
 
+print("started formatting data for NB classifier...")
 data = []
 for document in labeledReviews:
     dictionary = {}
     for word in tokens:
-        if word not in stopwords:
-            valid = word in document[0]
-            stemmed = porter.stem(word)
-            if not dictionary.get(stemmed):
-                dictionary[stemmed] = valid
+        valid = word in document[0]
+        if word not in dictionary:
+            dictionary[word] = valid
     data.append((dictionary, document[1]))
-print("finished formatting data for NB")
+print(data)
+print("finished formatting data for NB.")
 
-# data = []
-# for document in labeledReviews:
-#     dictionary = {}
-#     tokens = set(word for words in document)
-#     for word in tokens:
-#         if word not in stopwords:
-#             if word in tokens:
-#                 stemmed = porter.stem(word)
-#                 dictionary[stemmed] = word in word_tokenize(document[0])
-#     data.append((dictionary, document[1]))
-# print("finished formatting data for NB")
-
-#print(data)
 
 # Randomizing and splitting data for training and testing
 random.shuffle(data)
 training = data[0:(int)(len(labeledReviews)/2)]
 testing = data[(int)(len(labeledReviews)/2):]
-#debugging = data[0:2]
-#print(debugging)
-#
-# # Example of data format to work with
-# #testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
-#
-#
+
+
+# Example of data format to work with
+# testData = [({'This': False, 'is': False,'a': False, 'sentence':False}, 'pos'), ({'Another': False, 'sentence': False}, 'pos')]
+
+
 # # Using the same split, reformat training and testing data for LR classifer
 lrTraining = reformatForLR(training)
 lrTesting = reformatForLR(testing)
 #lrDebugging = reformatForLR(debugging)
 #print(lrTraining)
-print(lrTraining)
+# print(lrTraining)
 print("finished formatting data for LR")
 
 #print(lrTraining)
-#print(len(lrTraining))
+print(len(lrTraining))
 
-# # NB classifer training w/ training dataset
+# NB classifer training w/ training dataset
 classifier = nltk.NaiveBayesClassifier.train(training)
-#
-# # Most informative features from NB classifier
-# classifier.show_most_informative_features()
-#
+
+# Most informative features from NB classifier
+print("NB Results:")
+classifier.show_most_informative_features()
+
 truesets = collections.defaultdict(set)
 classifiersets =  collections.defaultdict(set)
-#
-# # Run NB classifer over testing dataset
+
+# Run NB classifer over testing dataset
 for i, (doc, label) in enumerate(testing):
   #run your classifier over testing dataset to see the peromance
   truesets[label].add(i)
   observed = classifier.classify(doc)
   classifiersets[observed].add(i)
-#
-# # Shows true and classifer sets
-# print(truesets)
-# print(classifiersets)
-#
+
+# Shows true and classifer sets
+print(truesets)
+print(classifiersets)
+
 # Calculate positive/negative precision and recall
 pos_precision = precision(truesets['pos'], classifiersets['pos'])
 neg_precision = precision(truesets["neg"], classifiersets["neg"])
@@ -208,25 +216,9 @@ print(pos_recall)
 print("Negative recall: ")
 print(neg_recall)
 
-# Lexicons for LR features:
-
-nltkPosLex = opinion_lexicon.positive()
-nltkNegLex = opinion_lexicon.negative()
-posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
-negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
-
-stemmedPosLex = lexStemmer(posLex)
-stemmedNegLex = lexStemmer(negLex)
-
 # Classify fake reviews later
 
-# Optimize for 85% precision, 78% recall ?
-# Start w/ b == 0
-
-
-#print(calculateCost(0.69, 0))
-
-#Feature table
+# Feature table
 '''
 Feature:    Definition:                 Initial weight:
 f0          word ∈ pos. lexicon         1
@@ -236,22 +228,22 @@ f3          bigrams "i like"            2
 f4          bigrams "not bad"           3
 f5          bigrams "dont like"         -3
 '''
-
-initialWeights = [1, -1, -3, 2, 3, -3]
+# initialWeights = [1, -1, -3, 2, 3, -3]
 
 formattedTraining = []
+print("counting features for LR classifier...")
 for review in lrTraining:
     formattedTraining.append(featureCount(review))
+    print("counted a review's features")
 # print(formattedTraining)
 
-# formattedTesting = []
-# for review in lrTesting:
-#     formattedTesting.append(featureCount(re
-#     view))
+formattedTesting = []
+for review in lrTesting:
+    formattedTesting.append(featureCount(review))
 
+print("building dataframe...")
 dataFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
 print(dataFrame)
-print(len(lrTraining))
 
 
 # theta = (old) theta + stepSize * gradient
