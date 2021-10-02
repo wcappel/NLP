@@ -12,6 +12,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import opinion_lexicon
+from sklearn.linear_model import LogisticRegression
 
 #nltk.download("punkt")
 #nltk.download("stopwords")
@@ -220,25 +221,41 @@ f5          bigrams "dont like"         -3
 print("formatting data for LR...")
 lrTraining = reformatForLR(training)
 lrTesting = reformatForLR(testing)
-print(lrTraining)
 print("finished formatting data for LR.")
 
 formattedTraining = []
 print("counting features for LR classifier...")
 for review in lrTraining:
-    # print(review)
     formattedTraining.append(featureCount(review))
-    #print("counted a review's features")
-# print(formattedTraining)
 
 formattedTesting = []
 for review in lrTesting:
     formattedTesting.append(featureCount(review))
 
-print("building dataframe...")
-dataFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
-print(dataFrame)
+# Turning data into DataFrames w/ labeled feature columns
+print("building dataframes...")
+trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
+testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
+print(trainFrame)
 
+# Get doc. # w/ feature columns from dataframe
+xTrain = trainFrame.iloc[:, 0:6]
+xTest = testFrame.iloc[:, 0:6]
+
+# Get doc. # w/ class tag from dataframe
+yTrain = trainFrame.iloc[:, -1]
+yTest = testFrame.iloc[:, -1]
+
+print("Doc. # w/ feature counts:")
+print(xTrain)
+print("Doc. # w/ class:")
+print(yTrain)
+
+# Train LR classifier on data
+print("beginning logistic regression...")
+logRegression = LogisticRegression(solver='sag')
+logRegression.fit(xTrain, yTrain)
+print("logistic regression training done.")
 
 # # theta = (old) theta + stepSize * gradient
 # # Gradient descent starts here:

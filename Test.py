@@ -121,3 +121,8 @@ print(formattedData)
 dataFrame = pandas.DataFrame(formattedData, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
 print(dataFrame)
 
+X = dataFrame.iloc[:, 0:6]
+y = dataFrame.iloc[:, -1]
+print(X)
+print(y)
+
