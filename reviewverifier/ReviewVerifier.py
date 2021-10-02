@@ -12,6 +12,7 @@ from nltk.stem.porter import PorterStemmer
 from nltk.corpus import opinion_lexicon
 from sklearn.linear_model import LogisticRegression
 
+
 #nltk.download("punkt")
 #nltk.download("stopwords")
 #nltk.download('opinion_lexicon')
@@ -34,6 +35,26 @@ def lexStemmer(lexicon):
     for word in lexicon:
         stemmedLexicon.append(porter.stem(word))
     return stemmedLexicon
+
+
+# Function case folds documents and remove punctuation
+def removePunct(reviews):
+    result = []
+    for document in reviews:
+        document = document.lower()
+        document = "".join([char for char in document if char not in string.punctuation])
+        result.append(document)
+    return result
+
+
+def formatForNB(reviews):
+    result = []
+    for x in reviews:
+        doc_tokens = word_tokenize(x[0])
+        dictionary = {word: (word in doc_tokens) for word in trainTokens}
+        newTup = (dictionary, x[1])
+        result.append(newTup)
+    return result
 
 
 # Method that reformats nltk-NB-formatted dataset for our LR
@@ -102,24 +123,15 @@ posFiles = [y for y in posFolder]
 
 labeledPosReviews = readFiles(posFiles)
 labeledNegReviews = readFiles(negFiles)
-labeledReviews = []
 
+print("preprocessing data...")
 posReviews = []
 negReviews = []
-
-# Loops case fold documents and remove punctuation
-print("preprocessing data...")
-for document in labeledPosReviews:
-    document = document.lower()
-    document = "".join([char for char in document if char not in string.punctuation])
-    posReviews.append(document)
-
-for document in labeledNegReviews:
-    document = document.lower()
-    document = "".join([char for char in document if char not in string.punctuation])
-    negReviews.append(document)
+posReviews = removePunct(labeledPosReviews)
+negReviews = removePunct(labeledNegReviews)
 
 # Remove stop words
+labeledReviews = []
 stopWords = stopwords.words()
 for document in posReviews:
     for word in document:
@@ -133,8 +145,7 @@ for document in negReviews:
             newDoc = " ".join(porter.stem(word))
     labeledReviews.append((document, "neg"))
 
-#print(labeledReviews)
-# No duplicates here!
+# print(labeledReviews)
 
 # Randomizing and splitting data for training and testing
 random.shuffle(labeledReviews)
@@ -147,21 +158,8 @@ testTokens = set(word for words in testing for word in word_tokenize(words[0]))
 
 # Tokenizing and formatting for NB
 print("started formatting data for NB classifier...")
-nbTrainData = []
-nbTestData = []
-
-for x in training:
-    doc_tokens = word_tokenize(x[0])
-    dictionary = {word: (word in doc_tokens) for word in trainTokens}
-    newTup = (dictionary, x[1])
-    nbTrainData.append(newTup)
-
-for x in testing:
-    doc_tokens = word_tokenize(x[0])
-    dictionary = {word: (word in doc_tokens) for word in testTokens}
-    newTup = (dictionary, x[1])
-    nbTestData.append(newTup)
-
+nbTrainData = formatForNB(training)
+nbTestData = formatForNB(testing)
 print("finished formatting data for NB.")
 
 # NB classifer training w/ training dataset
@@ -171,12 +169,11 @@ classifier = nltk.NaiveBayesClassifier.train(nbTrainData)
 # Most informative features from NB classifier
 classifier.show_most_informative_features()
 
+# Run NB classifer over testing dataset
+print("testing NB classifier...")
 truesets = collections.defaultdict(set)
 classifiersets = collections.defaultdict(set)
-
-# Run NB classifer over testing dataset
 for i, (doc, label) in enumerate(nbTestData):
-  #run your classifier over testing dataset to see the peromance
   truesets[label].add(i)
   observed = classifier.classify(doc)
   classifiersets[observed].add(i)
@@ -201,8 +198,6 @@ print(pos_recall)
 print("Negative recall: ")
 print(neg_recall)
 
-# Classify fake reviews later
-
 # Feature table
 '''
 Feature:    Definition:                 Initial weight:
@@ -221,8 +216,8 @@ lrTraining = reformatForLR(training)
 lrTesting = reformatForLR(testing)
 print("finished formatting data for LR.")
 
-formattedTraining = []
 print("counting features for LR classifier...")
+formattedTraining = []
 for review in lrTraining:
     formattedTraining.append(featureCount(review))
 
@@ -302,4 +297,5 @@ print("Positive Recall: " + str(lrPosRecall))
 print("Negative Recall: " + str(lrNegRecall))
 print("Positive F-Measure: " + str(lrPosF))
 print("Negative F-Measure: " + str(lrNegF))
+print("         Ignore warning below         ")
 
