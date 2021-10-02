@@ -245,6 +245,8 @@ xTest = testFrame.iloc[:, 0:6]
 # Get doc. # w/ class tag from dataframe
 yTrain = trainFrame.iloc[:, -1]
 yTest = testFrame.iloc[:, -1]
+testTruePos = testFrame.loc[testFrame['class'] == 1]
+testTrueNeg = testFrame.loc[testFrame['class'] == 0]
 
 # print("Doc. # w/ feature counts:")
 # print(xTrain)
@@ -259,8 +261,8 @@ print("logistic regression training done.")
 
 # Testing LR classifier
 print("testing LR classifier...")
-predicted = logRegression.predict(xTest)
-#print(predicted)
+predictedFromTruePos = logRegression.predict(testTruePos)
+predictedFromTrueNeg = logRegression.predict(testTrueNeg)
 print("finished testing LR classifier.")
 
 # Comparing LR predicted classes w/ true classes
