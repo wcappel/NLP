@@ -284,7 +284,7 @@ for result in predictedFromTrueNeg:
     else:
         falsePositives += 1
 
-# Calculate precision, recall, and f-measure
+# Count true/false positives and negatives; calculate precision, recall, and f-measure
 print(" ################################## LR Results: ################################## ")
 print("# of true positives: " + str(truePositives) + ", # of false positives: " +
       str(falsePositives) + ", # of true negatives: " + str(trueNegatives) +
