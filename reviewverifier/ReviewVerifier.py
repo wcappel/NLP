@@ -11,8 +11,6 @@ from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import opinion_lexicon
 from sklearn.linear_model import LogisticRegression
-
-
 #nltk.download("punkt")
 #nltk.download("stopwords")
 #nltk.download('opinion_lexicon')
@@ -47,6 +45,7 @@ def removePunct(reviews):
     return result
 
 
+# Formats data for NLTK NB classifier
 def formatForNB(reviews):
     result = []
     for x in reviews:
@@ -57,9 +56,7 @@ def formatForNB(reviews):
     return result
 
 
-# Method that reformats nltk-NB-formatted dataset for our LR
-#labeledReviews = [('text', 'tag'), ('text', 'tag')]
-# want it to look like: [('a', 'sentence', 'here',), 'pos']
+# Method that formats dataset for LR
 def reformatForLR(notFormatted):
     reformatted = []
     for rev in notFormatted:
@@ -125,8 +122,6 @@ labeledPosReviews = readFiles(posFiles)
 labeledNegReviews = readFiles(negFiles)
 
 print("preprocessing data...")
-posReviews = []
-negReviews = []
 posReviews = removePunct(labeledPosReviews)
 negReviews = removePunct(labeledNegReviews)
 
@@ -184,7 +179,7 @@ for i, (doc, label) in enumerate(nbTestData):
 
 # Calculate positive/negative precision and recall
 print("evaluating classifier...")
-print("################################## NB Results: ################################## ")
+print(" ################################## NB Results: ################################## ")
 pos_precision = precision(truesets['pos'], classifiersets['pos'])
 neg_precision = precision(truesets["neg"], classifiersets["neg"])
 pos_recall = recall(truesets['pos'], classifiersets['pos'])
@@ -201,12 +196,12 @@ print(neg_recall)
 # Feature table
 '''
 Feature:    Definition:                 Initial weight:
-f0          word ∈ pos. lexicon         1
-f1          word ∈ neg. lexicon         -1
-f2          bigrams "not good"          -3
-f3          bigrams "i like"            2
-f4          bigrams "not bad"           3
-f5          bigrams "dont like"         -3
+f1          word ∈ pos. lexicon         1
+f2          word ∈ neg. lexicon         -1
+f3          bigrams "not good"          -3
+f4          bigrams "i like"            2
+f5          bigrams "not bad"           3
+f6          bigrams "dont like"         -3
 '''
 # initialWeights = [1, -1, -3, 2, 3, -3]
 
