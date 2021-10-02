@@ -236,7 +236,7 @@ for review in lrTesting:
 print("building dataframes...")
 trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
 testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
-# print(trainFrame)
+print(trainFrame)
 
 # Get doc. # w/ feature columns from dataframe
 xTrain = trainFrame.iloc[:, 0:6]
@@ -245,8 +245,11 @@ xTest = testFrame.iloc[:, 0:6]
 # Get doc. # w/ class tag from dataframe
 yTrain = trainFrame.iloc[:, -1]
 yTest = testFrame.iloc[:, -1]
-testTruePos = testFrame.loc[testFrame['class'] == 1]
-testTrueNeg = testFrame.loc[testFrame['class'] == 0]
+uncutTestTruePos = testFrame.loc[testFrame['class'] == 1]
+uncutTestTrueNeg = testFrame.loc[testFrame['class'] == 0]
+testTruePos = uncutTestTruePos.iloc[:, 0:6]
+testTrueNeg = uncutTestTrueNeg.iloc[:, 0:6]
+print(testTruePos)
 
 # print("Doc. # w/ feature counts:")
 # print(xTrain)
@@ -266,6 +269,7 @@ predictedFromTrueNeg = logRegression.predict(testTrueNeg)
 print("finished testing LR classifier.")
 
 # Comparing LR predicted classes w/ true classes
+
 
 
 # # theta = (old) theta + stepSize * gradient
@@ -327,6 +331,5 @@ print("finished testing LR classifier.")
 # # stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
 # # Use learning rate instead?
 # # learningRate = 0.1
-
 
 
