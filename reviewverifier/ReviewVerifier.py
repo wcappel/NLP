@@ -3,8 +3,6 @@ import string
 import random
 import collections
 import nltk.metrics
-import math
-import numpy
 import pandas
 from nltk.metrics.scores import (precision, recall)
 from pathlib import Path
@@ -171,7 +169,6 @@ print("training NB classifier...")
 classifier = nltk.NaiveBayesClassifier.train(nbTrainData)
 
 # Most informative features from NB classifier
-print("NB Results:")
 classifier.show_most_informative_features()
 
 truesets = collections.defaultdict(set)
@@ -190,6 +187,7 @@ for i, (doc, label) in enumerate(nbTestData):
 
 # Calculate positive/negative precision and recall
 print("evaluating classifier...")
+print("################################## NB Results: ################################## ")
 pos_precision = precision(truesets['pos'], classifiersets['pos'])
 neg_precision = precision(truesets["neg"], classifiersets["neg"])
 pos_recall = recall(truesets['pos'], classifiersets['pos'])
@@ -236,7 +234,7 @@ for review in lrTesting:
 print("building dataframes...")
 trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
 testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
-print(trainFrame)
+#print(trainFrame)
 
 # Get doc. # w/ feature columns from dataframe
 xTrain = trainFrame.iloc[:, 0:6]
@@ -249,7 +247,7 @@ uncutTestTruePos = testFrame.loc[testFrame['class'] == 1]
 uncutTestTrueNeg = testFrame.loc[testFrame['class'] == 0]
 testTruePos = uncutTestTruePos.iloc[:, 0:6]
 testTrueNeg = uncutTestTrueNeg.iloc[:, 0:6]
-print(testTruePos)
+#print(testTruePos)
 
 # print("Doc. # w/ feature counts:")
 # print(xTrain)
@@ -269,67 +267,39 @@ predictedFromTrueNeg = logRegression.predict(testTrueNeg)
 print("finished testing LR classifier.")
 
 # Comparing LR predicted classes w/ true classes
+truePositives = 0
+falsePositives = 0
+trueNegatives = 0
+falseNegatives = 0
 
+for result in predictedFromTruePos:
+    if result == 0:
+        falseNegatives += 1
+    else:
+        truePositives += 1
 
+for result in predictedFromTrueNeg:
+    if result == 0:
+        trueNegatives += 1
+    else:
+        falsePositives += 1
 
-# # theta = (old) theta + stepSize * gradient
-# # Gradient descent starts here:
-#
-#
-# '''
-# Probably want to perform gradient descent on each document with its cost function return value?
-# We then adjust weights using stepSizes/learning rate based on information such as feature
-# count in the document? But then probably also want to some kind of total value/accuracy across
-# all documents and use that to adjust.
-# So input for each doc. would probably be:
-#  weights = [w1, w2, ... wn]
-#  bias
-#  fCount = [f1, f2, ... fn]
-#  calculateCost return value
-#  estimated class
-#  true/actual class
-#  ... what else?
-# '''
-#
-# # # z = w * x + b
-# # def calculateZ(w, x, b):
-# #     dProd = numpy.dot(w, x)
-# #     return dProd + b
-# #
-# # # Sigmoid funct. to fit btwn. 0 and 1
-# # def sigmoid(z):
-# #     return 1.0 / (1.0 + math.exp(-z))
-# #
-# #
-# # # classVal is either 1 (pos) or 0 (neg),
-# # def probForClass(classVal, z):
-# #     if classVal == 1:
-# #         return sigmoid(z)
-# #     elif classVal == 0:
-# #         return 1.0 - sigmoid(z)
-# #     else:
-# #         print("classVal must be 1 or 0")
-# #
-# #
-# # # Estimates class w/ prob. of neg and pos, using decision boundary
-# # def estimateClass(z):
-# #     if probForClass(1, z) > 0.5:
-# #         return 1
-# #     else:
-# #         return 0
-# #
-# #
-# # # Cost function:
-# # def calculateCost(trueClass, z):
-# #     return -((trueClass * math.log(sigmoid(z))) + ((1 - trueClass) * math.log(1 - sigmoid(z))))
-#
-#
-# # xj = array of freq. of features, trueClass = actual class (0 or 1)
-# #def gradientDesc(review, trueClass):
-#
-#
-# # stepSizes = [0.01, 0.05, 0.1, 0.5, 1] ?
-# # Use learning rate instead?
-# # learningRate = 0.1
+# Calculate precision, recall, and f-measure
+print(" ################################## LR Results: ################################## ")
+print("# of true positives: " + str(truePositives) + ", # of false positives: " +
+      str(falsePositives) + ", # of true negatives: " + str(trueNegatives) +
+      ", # of false negatives: " + str(falseNegatives))
 
+lrPosPrec = truePositives / (truePositives + falsePositives)
+lrNegPrec = trueNegatives / (trueNegatives + falseNegatives)
+lrPosRecall = truePositives / (truePositives + falseNegatives)
+lrNegRecall = trueNegatives / (trueNegatives + falsePositives)
+lrPosF = (2 *(lrPosPrec * lrPosRecall)) / (lrPosPrec + lrPosRecall)
+lrNegF = (2 *(lrNegPrec * lrNegRecall)) / (lrNegPrec + lrNegRecall)
+print("Positive Precision: " + str(lrPosPrec))
+print("Negative Precision: " + str(lrNegPrec))
+print("Positive Recall: " + str(lrPosRecall))
+print("Negative Recall: " + str(lrNegRecall))
+print("Positive F-Measure: " + str(lrPosF))
+print("Negative F-Measure: " + str(lrNegF))
 
