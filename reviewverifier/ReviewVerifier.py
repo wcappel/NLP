@@ -236,7 +236,7 @@ for review in lrTesting:
 print("building dataframes...")
 trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
 testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
-print(trainFrame)
+# print(trainFrame)
 
 # Get doc. # w/ feature columns from dataframe
 xTrain = trainFrame.iloc[:, 0:6]
@@ -246,16 +246,25 @@ xTest = testFrame.iloc[:, 0:6]
 yTrain = trainFrame.iloc[:, -1]
 yTest = testFrame.iloc[:, -1]
 
-print("Doc. # w/ feature counts:")
-print(xTrain)
-print("Doc. # w/ class:")
-print(yTrain)
+# print("Doc. # w/ feature counts:")
+# print(xTrain)
+# print("Doc. # w/ class:")
+# print(yTrain)
 
 # Train LR classifier on data
 print("beginning logistic regression...")
 logRegression = LogisticRegression(solver='sag')
 logRegression.fit(xTrain, yTrain)
 print("logistic regression training done.")
+
+# Testing LR classifier
+print("testing LR classifier...")
+predicted = logRegression.predict(xTest)
+#print(predicted)
+print("finished testing LR classifier.")
+
+# Comparing LR predicted classes w/ true classes
+
 
 # # theta = (old) theta + stepSize * gradient
 # # Gradient descent starts here:
