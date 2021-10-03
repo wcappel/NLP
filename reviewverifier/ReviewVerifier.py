@@ -59,37 +59,15 @@ def formatForNB(reviews):
 def reformatForLR(notFormatted):
     reformatted = []
     for rev in notFormatted:
-        bigList = [word_tokenize(rev[0]), rev[1]]
+        bigList = [word_tokenize(rev[0]), rev[1], rev[2]]
         reformatted.append(bigList)
     return reformatted
 
 
-'''
-Feature:    Definition:                     Initial weight:
-f1          word ∈ pos. lexicon             1
-f2          word ∈ neg. lexicon             -1
-f3          contains "refund" or "return"   -5 (each adds to count)
-f4          bigrams "no problem"             3
-f5          bigrams "dont buy" or "not buy" -3
-f6          bigrams "not work"              -3
-'''
-# Potential other features
-'''
-f8          bigrams "not \(positive word)       -1
-f9          bigrams "not \(negative word)       -1
-f10         bigrams "very \(positive word)      5
-f11         bigrams "very \(negative word)      -5
-f12         trigrams "would/will buy again"     3
-f13         trigrams "not buy again"            -3
-f14         trigrams "would/will not recommend" -3
-f15         ^ else trigram[1] == would/will and trigram[2] == recommend 3
-'''
-
-
 # Given a review, returns list of features counts with class appended
-# Parameter 'review' will look like: (['A', 'sentence'], pos)
+# Parameter 'x' will look like: (['A', 'sentence'], pos)
 def featureCount(x):
-    frequencies = [0, 0, 0, 0, 0, 0, 0]
+    frequencies = [0] * 11
     for w in x[0]:
         if w == "refund":
             frequencies[2] += 1
@@ -99,21 +77,30 @@ def featureCount(x):
             frequencies[0] += 1
         elif w in stemmedNegLex:
             frequencies[1] += 1
-    restrung = " ".join(review[0])
+    restrung = " ".join(x[0])
     reviewBigrams = list(nltk.bigrams(restrung.split()))
+    reviewTrigrams = list(nltk.ngrams(restrung.split(), 3))
     for bigram in reviewBigrams:
         #print(bigram)
         if (bigram[0] == 'dont' and bigram[1] == 'buy') or (bigram[0] == 'not' and bigram[1] == 'buy'):
             frequencies[4] += 1
-        elif (bigram[0] == 'not' and bigram[1] == 'work'):
+        elif (bigram[0] == 'not') and bigram[1] == 'work':
             frequencies[5] += 1
-        elif (bigram[0] == 'no' and bigram[1] == 'problem'):
+        elif (bigram[0] == 'no') and bigram[1] == 'problem':
             frequencies[3] += 1
+        elif (bigram[0] == 'not') and bigram[1] in stemmedPosLex:
+            frequencies[6] += 1
+        elif (bigram[0] == 'not') and bigram[1] in stemmedNegLex:
+            frequencies[7] += 1
+        elif (bigram[0] == 'very' or 'really') and bigram[1] in stemmedPosLex:
+            frequencies[8] += 1
+        elif (bigram[0] == 'very' or 'really') and bigram[1] in stemmedNegLex:
+            frequencies[9] += 1
     if x[1] == 'pos':
-        frequencies[6] = 1
+        frequencies[-1] = 1
     elif x[1] == 'neg':
-        frequencies[6] = 0
-    print(frequencies)
+        frequencies[-1] = 0
+    #print(frequencies)
     return frequencies
 
 
@@ -125,20 +112,6 @@ nltkPosLex = opinion_lexicon.positive()
 nltkNegLex = opinion_lexicon.negative()
 posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
 negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
-# posLex = ['amazing', 'amazingly', 'awesome', 'awesomely', 'well-made', 'beautiful',
-#           'beautifully', 'great', 'fantastic', 'fantastically', 'wonderful', 'wonderfully',
-#           'smooth', 'smoothly', 'cool', 'perfect', 'perfectly', 'fast', 'highly',
-#           'flawless', 'flawlessly', 'brilliant', 'brilliantly', 'speedily', 'swift',
-#           'swiftly', 'terrific', 'terrifically', 'superb', 'superbly', 'cleanest',
-#           'legendary', 'crisp', 'immaculate', 'bargain', 'pleasing', 'happy', 'joy',
-#           'steal', 'best']
-# negLex = ['terrible', 'terribly', 'awful', 'awfully', 'slow', 'slowly',
-#           'horrible', 'horribly', 'junk', 'worst', 'sucks', 'sucked', 'ugly',
-#           'hideous', 'hideously', 'weak', 'crap', 'shit', 'useless', 'broken',
-#           'waste', 'scam', 'scammed', 'noisy', 'stopped', 'send', 'sending',
-#           'laggy', 'lags', 'lagging', 'stupid', 'stupidly', 'dumb', 'unsatisfactory',
-#           'inadequate', 'inadequately', 'incompetent', 'incompetently', 'difficult',
-#           'garbage', 'trash', 'poor', 'poorly', 'defective']
 
 stemmedPosLex = set(lexStemmer(posLex))
 stemmedNegLex = set(lexStemmer(negLex))
@@ -148,7 +121,6 @@ negFolder = Path('./neg/').rglob('*.txt')
 posFolder = Path('./pos/').rglob('*.txt')
 posRatingsPath = Path('./ratings/').rglob('positive.txt')
 negRatingsPath = Path('./ratings/').rglob('negative.txt')
-
 
 # Lists of every txt file in each folder
 print("reading files...")
@@ -190,18 +162,18 @@ negReviews = removePunct(labeledNegReviews)
 # Remove stop words
 labeledReviews = []
 stopWords = stopwords.words()
-for document in posReviews:
+for i, document in enumerate(posReviews):
     for word in document:
         if word not in stopWords:
             newDoc = " ".join(porter.stem(word))
-    labeledReviews.append((document, "pos"))
+    labeledReviews.append((document, "pos", posSepRatings[i]))
 
-for document in negReviews:
+for i, document in enumerate(negReviews):
     for word in document:
         if word not in stopWords:
             newDoc = " ".join(porter.stem(word))
-    labeledReviews.append((document, "neg"))
-# print(labeledReviews)
+    labeledReviews.append((document, "neg", negSepRatings[i]))
+#print(labeledReviews)
 
 # Randomizing and splitting data for training and testing, use same random value for ratings
 seed = random.randint(0, 2147483647)
@@ -235,12 +207,10 @@ classifier.show_most_informative_features()
 print("testing NB classifier...")
 truesets = collections.defaultdict(set)
 classifiersets = collections.defaultdict(set)
-rawPredict = []
 for i, (doc, label) in enumerate(nbTestData):
   truesets[label].add(i)
   observed = classifier.classify(doc)
   classifiersets[observed].add(i)
-  rawPredict.append(observed)
 
 # Shows true and classifer sets
 #print(truesets)
@@ -263,22 +233,18 @@ print("Negative recall: ")
 print(neg_recall)
 
 # Feature table for LR
-# New feature table
 '''
-Feature:    Definition:                     Initial weight:
-f1          word ∈ pos. lexicon             1
-f2          word ∈ neg. lexicon             -1
-f3          contains "refund" or "return"   -5 (each adds to count)
-f4          bigrams "no problem"             3
-f5          bigrams "dont buy" or "not buy" -3
-f6          bigrams "not work"              -3
-'''
-# Potential other features
-'''
-f8          bigrams "not \(positive word)   -1
-f9          bigrams "not \(negative word)   -1
-f10         bigrams "very \(positive word)  -
-f11         bigrams "very \(negative word)  -5
+Feature:    Definition:                         Initial weight:
+f1          word ∈ pos. lexicon                 1
+f2          word ∈ neg. lexicon                 -1
+f3          contains "refund" or "return"       -5 (each adds to count)
+f4          bigrams "no problem"                3
+f5          bigrams "dont buy" or "not buy"     -3
+f6          bigrams "not work"                  -3
+f7          bigrams "not \(positive word)"      -1
+f8          bigrams "not \(negative word)"      1
+f9          bigrams "very \(positive word)"     5
+f10         bigrams "very \(negative word)"     -5
 '''
 # Sample weights = [1, -1, -5, 3, -3, -3]
 
@@ -286,6 +252,7 @@ f11         bigrams "very \(negative word)  -5
 print("formatting data for LR...")
 lrTraining = reformatForLR(training)
 lrTesting = reformatForLR(testing)
+#print(lrTesting)
 print("finished formatting data for LR.")
 
 print("counting features for LR classifier...")
@@ -299,27 +266,22 @@ for review in lrTesting:
 
 # Turning data into DataFrames w/ labeled feature columns
 print("building dataframes...")
-trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
-testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'class'])
+trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class'])
+testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class'])
 #print(trainFrame)
 
 # Get doc. # w/ feature columns from dataframe
-xTrain = trainFrame.iloc[:, 0:6]
-xTest = testFrame.iloc[:, 0:6]
+xTrain = trainFrame.iloc[:, 0:10]
+xTest = testFrame.iloc[:, 0:10]
 
 # Get doc. # w/ class tag from dataframe
 yTrain = trainFrame.iloc[:, -1]
 yTest = testFrame.iloc[:, -1]
 uncutTestTruePos = testFrame.loc[testFrame['class'] == 1]
 uncutTestTrueNeg = testFrame.loc[testFrame['class'] == 0]
-testTruePos = uncutTestTruePos.iloc[:, 0:6]
-testTrueNeg = uncutTestTrueNeg.iloc[:, 0:6]
+testTruePos = uncutTestTruePos.iloc[:, 0:10]
+testTrueNeg = uncutTestTrueNeg.iloc[:, 0:10]
 #print(testTruePos)
-
-# print("Doc. # w/ feature counts:")
-# print(xTrain)
-# print("Doc. # w/ class:")
-# print(yTrain)
 
 # Train LR classifier on data
 print("beginning logistic regression...")
@@ -372,21 +334,27 @@ print("Positive F-Measure: " + str(lrPosF))
 print("Negative F-Measure: " + str(lrNegF))
 
 # Identifying fake reviews through raw predictions from NB classifier and ratings
-#print("identifying fake reviews...")
-print(ratingsTesting)
-# comparison = []
-# for rating in ratingsTesting:
-#     if 'P' in rating[0]:
-#         comparison.append('pos')
-#     else:
-#         comparison.append('neg')
-# print(comparison)
-# print(rawPredict)
+print("identifying fake reviews...")
+# print(ratingsTesting)
+#testTruePos
+#predictedFromTruePos
+#testTrueNeg
+#predictedFromTrueNeg
 
-# fake = []
-# for i, rating in enumerate(ratingsTesting):
-#     if (float(rating[1]) > 3.0) and rawPredict[i] == 'neg':
-#         fake.append(rating[0])
-#     elif (float(rating[1]) < 3.0) and rawPredict[i] == 'pos':
-#         fake.append(rating[0])
-# print(fake)
+truePosResults = []
+trueNegResults = []
+for result in predictedFromTruePos:
+    truePosResults.append(result)
+
+for result in predictedFromTrueNeg:
+    trueNegResults.append(result)
+
+rawResults = truePosResults + trueNegResults
+
+fake = []
+for i, rating in enumerate(ratingsTesting):
+    if (float(rating[1]) > 3.0) and rawResults[i] == 0:
+        fake.append(rating[0])
+    elif (float(rating[1]) < 3.0) and rawResults[i] == 1:
+        fake.append(rating[0])
+print(fake)
