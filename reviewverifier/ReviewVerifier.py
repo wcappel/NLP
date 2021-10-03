@@ -67,7 +67,7 @@ def reformatForLR(notFormatted):
 # Given a review, returns list of features counts with class appended
 # Parameter 'x' will look like: (['A', 'sentence'], pos)
 def featureCount(x):
-    frequencies = [0] * 11
+    frequencies = [0] * 12
     for w in x[0]:
         if w == "refund":
             frequencies[2] += 1
@@ -97,9 +97,10 @@ def featureCount(x):
         elif (bigram[0] == 'very' or 'really') and bigram[1] in stemmedNegLex:
             frequencies[9] += 1
     if x[1] == 'pos':
-        frequencies[-1] = 1
+        frequencies[-2] = 1
     elif x[1] == 'neg':
-        frequencies[-1] = 0
+        frequencies[-2] = 0
+    frequencies[-1] = x[2]
     #print(frequencies)
     return frequencies
 
@@ -266,8 +267,8 @@ for review in lrTesting:
 
 # Turning data into DataFrames w/ labeled feature columns
 print("building dataframes...")
-trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class'])
-testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class'])
+trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class', 'rating'])
+testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class', 'rating'])
 #print(trainFrame)
 
 # Get doc. # w/ feature columns from dataframe
@@ -275,8 +276,8 @@ xTrain = trainFrame.iloc[:, 0:10]
 xTest = testFrame.iloc[:, 0:10]
 
 # Get doc. # w/ class tag from dataframe
-yTrain = trainFrame.iloc[:, -1]
-yTest = testFrame.iloc[:, -1]
+yTrain = trainFrame.iloc[:, -2]
+yTest = testFrame.iloc[:, -2]
 uncutTestTruePos = testFrame.loc[testFrame['class'] == 1]
 uncutTestTrueNeg = testFrame.loc[testFrame['class'] == 0]
 testTruePos = uncutTestTruePos.iloc[:, 0:10]
@@ -335,12 +336,6 @@ print("Negative F-Measure: " + str(lrNegF))
 
 # Identifying fake reviews through raw predictions from NB classifier and ratings
 print("identifying fake reviews...")
-# print(ratingsTesting)
-#testTruePos
-#predictedFromTruePos
-#testTrueNeg
-#predictedFromTrueNeg
-
 truePosResults = []
 trueNegResults = []
 for result in predictedFromTruePos:
@@ -350,11 +345,12 @@ for result in predictedFromTrueNeg:
     trueNegResults.append(result)
 
 rawResults = truePosResults + trueNegResults
+actualRatings = uncutTestTruePos['rating'].tolist() + uncutTestTrueNeg['rating'].tolist()
 
 fake = []
-for i, rating in enumerate(ratingsTesting):
+for i, rating in enumerate(actualRatings):
     if (float(rating[1]) > 3.0) and rawResults[i] == 0:
-        fake.append(rating[0])
+        fake.append(rating)
     elif (float(rating[1]) < 3.0) and rawResults[i] == 1:
-        fake.append(rating[0])
+        fake.append(rating)
 print(fake)
