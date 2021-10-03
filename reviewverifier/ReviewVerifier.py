@@ -10,6 +10,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from sklearn.linear_model import LogisticRegression
+from nltk.corpus import opinion_lexicon
 #nltk.download("punkt")
 #nltk.download("stopwords")
 
@@ -62,6 +63,7 @@ def reformatForLR(notFormatted):
         reformatted.append(bigList)
     return reformatted
 
+
 '''
 Feature:    Definition:                     Initial weight:
 f1          word ∈ pos. lexicon             1
@@ -71,6 +73,19 @@ f4          bigrams "no problem"             3
 f5          bigrams "dont buy" or "not buy" -3
 f6          bigrams "not work"              -3
 '''
+# Potential other features
+'''
+f8          bigrams "not \(positive word)       -1
+f9          bigrams "not \(negative word)       -1
+f10         bigrams "very \(positive word)      5
+f11         bigrams "very \(negative word)      -5
+f12         trigrams "would/will buy again"     3
+f13         trigrams "not buy again"            -3
+f14         trigrams "would/will not recommend" -3
+f15         ^ else trigram[1] == would/will and trigram[2] == recommend 3
+'''
+
+
 # Given a review, returns list of features counts with class appended
 # Parameter 'review' will look like: (['A', 'sentence'], pos)
 def featureCount(x):
@@ -106,20 +121,24 @@ def featureCount(x):
 # Lexicons for LR features:
 print("formatting lexicons...")
 porter = PorterStemmer()
-posLex = ['amazing', 'amazingly', 'awesome', 'awesomely', 'well-made', 'beautiful',
-          'beautifully', 'great', 'fantastic', 'fantastically', 'wonderful', 'wonderfully',
-          'smooth', 'smoothly', 'cool', 'perfect', 'perfectly', 'fast', 'highly',
-          'flawless', 'flawlessly', 'brilliant', 'brilliantly', 'speedily', 'swift',
-          'swiftly', 'terrific', 'terrifically', 'superb', 'superbly', 'cleanest',
-          'legendary', 'crisp', 'immaculate', 'bargain', 'pleasing', 'happy', 'joy',
-          'steal', 'best']
-negLex = ['terrible', 'terribly', 'awful', 'awfully', 'slow', 'slowly',
-          'horrible', 'horribly', 'junk', 'worst', 'sucks', 'sucked', 'ugly',
-          'hideous', 'hideously', 'weak', 'crap', 'shit', 'useless', 'broken',
-          'waste', 'scam', 'scammed', 'noisy', 'stopped', 'send', 'sending',
-          'laggy', 'lags', 'lagging', 'stupid', 'stupidly', 'dumb', 'unsatisfactory',
-          'inadequate', 'inadequately', 'incompetent', 'incompetently', 'difficult',
-          'garbage', 'trash', 'poor', 'poorly', 'defective']
+nltkPosLex = opinion_lexicon.positive()
+nltkNegLex = opinion_lexicon.negative()
+posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
+negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
+# posLex = ['amazing', 'amazingly', 'awesome', 'awesomely', 'well-made', 'beautiful',
+#           'beautifully', 'great', 'fantastic', 'fantastically', 'wonderful', 'wonderfully',
+#           'smooth', 'smoothly', 'cool', 'perfect', 'perfectly', 'fast', 'highly',
+#           'flawless', 'flawlessly', 'brilliant', 'brilliantly', 'speedily', 'swift',
+#           'swiftly', 'terrific', 'terrifically', 'superb', 'superbly', 'cleanest',
+#           'legendary', 'crisp', 'immaculate', 'bargain', 'pleasing', 'happy', 'joy',
+#           'steal', 'best']
+# negLex = ['terrible', 'terribly', 'awful', 'awfully', 'slow', 'slowly',
+#           'horrible', 'horribly', 'junk', 'worst', 'sucks', 'sucked', 'ugly',
+#           'hideous', 'hideously', 'weak', 'crap', 'shit', 'useless', 'broken',
+#           'waste', 'scam', 'scammed', 'noisy', 'stopped', 'send', 'sending',
+#           'laggy', 'lags', 'lagging', 'stupid', 'stupidly', 'dumb', 'unsatisfactory',
+#           'inadequate', 'inadequately', 'incompetent', 'incompetently', 'difficult',
+#           'garbage', 'trash', 'poor', 'poorly', 'defective']
 
 stemmedPosLex = set(lexStemmer(posLex))
 stemmedNegLex = set(lexStemmer(negLex))
@@ -253,6 +272,13 @@ f3          contains "refund" or "return"   -5 (each adds to count)
 f4          bigrams "no problem"             3
 f5          bigrams "dont buy" or "not buy" -3
 f6          bigrams "not work"              -3
+'''
+# Potential other features
+'''
+f8          bigrams "not \(positive word)   -1
+f9          bigrams "not \(negative word)   -1
+f10         bigrams "very \(positive word)  -
+f11         bigrams "very \(negative word)  -5
 '''
 # Sample weights = [1, -1, -5, 3, -3, -3]
 
