@@ -94,6 +94,8 @@ def featureCount(x):
             frequencies[4] += 1
         elif (bigram[0] == 'not' and bigram[1] == 'work'):
             frequencies[5] += 1
+        elif (bigram[0] == 'no' and bigram[1] == 'problem'):
+            frequencies[3] += 1
     if x[1] == 'pos':
         frequencies[6] = 1
     elif x[1] == 'neg':
@@ -106,10 +108,8 @@ def featureCount(x):
 # Lexicons for LR features:
 print("formatting lexicons...")
 porter = PorterStemmer()
-nltkPosLex = opinion_lexicon.positive()
-nltkNegLex = opinion_lexicon.negative()
-posLex = ["".join(list_of_words) for list_of_words in nltkPosLex]
-negLex = ["".join(list_of_words) for list_of_words in nltkNegLex]
+posLex = ['amazing', 'amazingly', 'awesome', 'awesomely', 'well-made', 'beautiful', 'beautifully', 'great', 'fantastic', 'fantastically', 'smooth', 'smoothly', 'cool', 'perfect', 'perfectly', 'fast', 'highly', 'flawless', 'flawlessly', 'brilliant', 'brilliantly', 'speedily', 'swift', 'swiftly', 'terrific', 'terrifically', 'superb', 'superbly', 'cleanest', 'legendary', 'crisp', 'immaculate', 'bargain', 'glad', 'pleased', 'pleasing', 'happy', 'joy', 'steal', 'best']
+negLex = ['terrible', 'terribly', 'awful', 'awfully', 'slow', 'slowly', 'horrible', 'horribly', 'junk', 'worst', 'sucks', 'sucked', 'ugly', 'hideous', 'hideously', 'weak', 'crap', 'shit', 'useless', 'broken', 'waste', 'scam', 'scammed', 'noisy', 'laggy', 'lags', 'lagging', 'stupid', 'stupidly', 'dumb', 'unsatisfactory', 'inadequate', 'inadequately', 'incompetent', 'incompetently', 'difficult', 'retarded', 'garbage', 'trash']
 
 stemmedPosLex = set(lexStemmer(posLex))
 stemmedNegLex = set(lexStemmer(negLex))
