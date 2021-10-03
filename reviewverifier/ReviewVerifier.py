@@ -64,13 +64,25 @@ def reformatForLR(notFormatted):
         reformatted.append(bigList)
     return reformatted
 
-
+'''
+Feature:    Definition:                     Initial weight:
+f1          word ∈ pos. lexicon             1
+f2          word ∈ neg. lexicon             -1
+f3          contains "refund" or "return"   -5 (each adds to count)
+f4          bigrams "no problem"             3
+f5          bigrams "dont buy" or "not buy" -3
+f6          bigrams "not work"              -3
+'''
 # Given a review, returns list of features counts with class appended
 # Parameter 'review' will look like: (['A', 'sentence'], pos)
 def featureCount(x):
     frequencies = [0, 0, 0, 0, 0, 0, 0]
     for w in x[0]:
-        if w in stemmedPosLex:
+        if w == "refund":
+            frequencies[2] += 1
+        elif w == "return":
+            frequencies[2] += 1
+        elif w in stemmedPosLex:
             frequencies[0] += 1
         elif w in stemmedNegLex:
             frequencies[1] += 1
@@ -78,19 +90,15 @@ def featureCount(x):
     reviewBigrams = list(nltk.bigrams(restrung.split()))
     for bigram in reviewBigrams:
         #print(bigram)
-        if bigram[0] == 'not' and bigram[1] == 'good':
-            frequencies[2] += 1
-        elif bigram[0] == 'i' and bigram[1] == 'like':
-            frequencies[3] += 1
-        elif bigram[0] == 'not' and bigram[1] == 'bad':
+        if (bigram[0] == 'dont' and bigram[1] == 'buy') or (bigram[0] == 'not' and bigram[1] == 'buy'):
             frequencies[4] += 1
-        elif bigram[0] == 'dont' and bigram[1] == 'like':
+        elif (bigram[0] == 'not' and bigram[1] == 'work'):
             frequencies[5] += 1
     if x[1] == 'pos':
         frequencies[6] = 1
     elif x[1] == 'neg':
         frequencies[6] = 0
-    # print(frequencies)
+    print(frequencies)
     return frequencies
 
 
@@ -226,15 +234,17 @@ print("Negative recall: ")
 print(neg_recall)
 
 # Feature table for LR
+# New feature table
 '''
-Feature:    Definition:                 Initial weight:
-f1          word ∈ pos. lexicon         1
-f2          word ∈ neg. lexicon         -1
-f3          bigrams "not good"          -3
-f4          bigrams "i like"            2
-f5          bigrams "not bad"           3
-f6          bigrams "dont like"         -3
+Feature:    Definition:                     Initial weight:
+f1          word ∈ pos. lexicon             1
+f2          word ∈ neg. lexicon             -1
+f3          contains "refund" or "return"   -5 (each adds to count)
+f4          bigrams "no problem"             3
+f5          bigrams "dont buy" or "not buy" -3
+f6          bigrams "not work"              -3
 '''
+# Sample weights = [1, -1, -5, 3, -3, -3]
 
 # Using the same split, reformat training and testing data for LR classifer
 print("formatting data for LR...")
@@ -326,21 +336,21 @@ print("Positive F-Measure: " + str(lrPosF))
 print("Negative F-Measure: " + str(lrNegF))
 
 # Identifying fake reviews through raw predictions from NB classifier and ratings
-print("identifying fake reviews...")
+#print("identifying fake reviews...")
 print(ratingsTesting)
-comparison = []
-for rating in ratingsTesting:
-    if 'P' in rating[0]:
-        comparison.append('pos')
-    else:
-        comparison.append('neg')
-print(comparison)
-print(rawPredict)
+# comparison = []
+# for rating in ratingsTesting:
+#     if 'P' in rating[0]:
+#         comparison.append('pos')
+#     else:
+#         comparison.append('neg')
+# print(comparison)
+# print(rawPredict)
 
-fake = []
-for i, rating in enumerate(ratingsTesting):
-    if (float(rating[1]) > 3.0) and rawPredict[i] == 'neg':
-        fake.append(rating[0])
-    elif (float(rating[1]) < 3.0) and rawPredict[i] == 'pos':
-        fake.append(rating[0])
-print(fake)
+# fake = []
+# for i, rating in enumerate(ratingsTesting):
+#     if (float(rating[1]) > 3.0) and rawPredict[i] == 'neg':
+#         fake.append(rating[0])
+#     elif (float(rating[1]) < 3.0) and rawPredict[i] == 'pos':
+#         fake.append(rating[0])
+# print(fake)
