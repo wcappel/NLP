@@ -94,10 +94,7 @@ def featureCount(x):
     return frequencies
 
 
-# ! Potentially think about using ratings as a feature
-
 # 'Main' starts here:
-
 # Lexicons for LR features:
 print("formatting lexicons...")
 porter = PorterStemmer()
@@ -112,16 +109,38 @@ stemmedNegLex = set(lexStemmer(negLex))
 # File paths for each labeled directory w/ only txt files selected
 negFolder = Path('./neg/').rglob('*.txt')
 posFolder = Path('./pos/').rglob('*.txt')
+posRatingsPath = Path('./ratings/').rglob('positive.txt')
+negRatingsPath = Path('./ratings/').rglob('negative.txt')
+
 
 # Lists of every txt file in each folder
 print("reading files...")
 negFiles = [x for x in negFolder]
 posFiles = [y for y in posFolder]
+posRatingsFile = [pos for pos in posRatingsPath]
+negRatingsFile = [neg for neg in negRatingsPath]
 
 labeledPosReviews = readFiles(posFiles)
 labeledNegReviews = readFiles(negFiles)
+posRatings = readFiles(posRatingsFile)
+negRatings = readFiles(negRatingsFile)
+print(posRatings)
 
+# Split ratings from each file into list w/ # and rating
 print("preprocessing data...")
+posRatingsSplit = posRatings[0].split("\n")
+negRatingsSplit = negRatings[0].split("\n")
+posSepRatings = []
+negSepRatings = []
+for rating in posRatingsSplit:
+    posSepRatings.append(str.split(" "))
+
+for rating in negRatingsSplit:
+    negSepRatings.append(str.split(" "))
+
+ratings = posSepRatings + negSepRatings
+
+# Case fold and remove punct.
 posReviews = removePunct(labeledPosReviews)
 negReviews = removePunct(labeledNegReviews)
 
@@ -139,13 +158,17 @@ for document in negReviews:
         if word not in stopWords:
             newDoc = " ".join(porter.stem(word))
     labeledReviews.append((document, "neg"))
-
 # print(labeledReviews)
 
-# Randomizing and splitting data for training and testing
+# Randomizing and splitting data for training and testing, use same random value for ratings
+seed = random.randint(0, 2147483647)
+random.seed(seed)
 random.shuffle(labeledReviews)
+random.seed(seed)
+random.shuffle(ratings)
 training = labeledReviews[0:(int)(len(labeledReviews)/2)]
 testing = labeledReviews[(int)(len(labeledReviews)/2):]
+ratingsTesting = ratings[(int)(len(ratings)/2):]
 
 # Generating tokens
 trainTokens = set(word for words in training for word in word_tokenize(words[0]))
@@ -193,7 +216,7 @@ print(pos_recall)
 print("Negative recall: ")
 print(neg_recall)
 
-# Feature table
+# Feature table for LR
 '''
 Feature:    Definition:                 Initial weight:
 f1          word ∈ pos. lexicon         1
@@ -203,7 +226,6 @@ f4          bigrams "i like"            2
 f5          bigrams "not bad"           3
 f6          bigrams "dont like"         -3
 '''
-# initialWeights = [1, -1, -3, 2, 3, -3]
 
 # Using the same split, reformat training and testing data for LR classifer
 print("formatting data for LR...")
@@ -246,7 +268,7 @@ testTrueNeg = uncutTestTrueNeg.iloc[:, 0:6]
 
 # Train LR classifier on data
 print("beginning logistic regression...")
-logRegression = LogisticRegression(solver='sag')
+logRegression = LogisticRegression(solver='sag') # class_weight=[1, -1, -3, 2, 3, -3]
 logRegression.fit(xTrain, yTrain)
 print("logistic regression training done.")
 
