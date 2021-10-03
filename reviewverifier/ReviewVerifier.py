@@ -124,7 +124,6 @@ labeledPosReviews = readFiles(posFiles)
 labeledNegReviews = readFiles(negFiles)
 posRatings = readFiles(posRatingsFile)
 negRatings = readFiles(negRatingsFile)
-print(posRatings)
 
 # Split ratings from each file into list w/ # and rating
 print("preprocessing data...")
@@ -133,10 +132,17 @@ negRatingsSplit = negRatings[0].split("\n")
 posSepRatings = []
 negSepRatings = []
 for rating in posRatingsSplit:
-    posSepRatings.append(str.split(" "))
+    posSepRatings.append(rating.split(" "))
 
 for rating in negRatingsSplit:
-    negSepRatings.append(str.split(" "))
+    negSepRatings.append(rating.split(" "))
+
+# Append 'P' for postive, 'N' for negative to identify which directory it came from for later
+for rating in posSepRatings:
+    rating[0] = 'P' + rating[0]
+
+for rating in negSepRatings:
+    rating[0] = 'N' + rating[0]
 
 ratings = posSepRatings + negSepRatings
 
@@ -169,6 +175,7 @@ random.shuffle(ratings)
 training = labeledReviews[0:(int)(len(labeledReviews)/2)]
 testing = labeledReviews[(int)(len(labeledReviews)/2):]
 ratingsTesting = ratings[(int)(len(ratings)/2):]
+#print(ratingsTesting)
 
 # Generating tokens
 trainTokens = set(word for words in training for word in word_tokenize(words[0]))
@@ -191,10 +198,12 @@ classifier.show_most_informative_features()
 print("testing NB classifier...")
 truesets = collections.defaultdict(set)
 classifiersets = collections.defaultdict(set)
+rawPredict = []
 for i, (doc, label) in enumerate(nbTestData):
   truesets[label].add(i)
   observed = classifier.classify(doc)
   classifiersets[observed].add(i)
+  rawPredict.append(observed)
 
 # Shows true and classifer sets
 #print(truesets)
@@ -268,6 +277,7 @@ testTrueNeg = uncutTestTrueNeg.iloc[:, 0:6]
 
 # Train LR classifier on data
 print("beginning logistic regression...")
+print("         Ignore warning below         ")
 logRegression = LogisticRegression(solver='sag') # class_weight=[1, -1, -3, 2, 3, -3]
 logRegression.fit(xTrain, yTrain)
 print("logistic regression training done.")
@@ -314,5 +324,18 @@ print("Positive Recall: " + str(lrPosRecall))
 print("Negative Recall: " + str(lrNegRecall))
 print("Positive F-Measure: " + str(lrPosF))
 print("Negative F-Measure: " + str(lrNegF))
-print("         Ignore warning below         ")
 
+# Identifying fake reviews through raw predictions from NB classifier and ratings
+print("identifying fake reviews...")
+print(ratingsTesting)
+print(rawPredict)
+
+fake = []
+# NOT DETECTING PROPERLY
+# for rating in ratingsTesting:
+#     if (float(rating[1]) > 3.0) and rawPredict[i] == 'neg':
+#         fake.append(rating[0])
+#     elif (float(rating[1]) < 3.0) and rawPredict[i] == 'pos':
+#         fake.append(rating[0])
+#
+# print(fake)
