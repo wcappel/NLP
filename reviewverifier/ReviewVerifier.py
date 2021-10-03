@@ -328,14 +328,19 @@ print("Negative F-Measure: " + str(lrNegF))
 # Identifying fake reviews through raw predictions from NB classifier and ratings
 print("identifying fake reviews...")
 print(ratingsTesting)
+comparison = []
+for rating in ratingsTesting:
+    if 'P' in rating[0]:
+        comparison.append('pos')
+    else:
+        comparison.append('neg')
+print(comparison)
 print(rawPredict)
 
 fake = []
-# NOT DETECTING PROPERLY
-# for rating in ratingsTesting:
-#     if (float(rating[1]) > 3.0) and rawPredict[i] == 'neg':
-#         fake.append(rating[0])
-#     elif (float(rating[1]) < 3.0) and rawPredict[i] == 'pos':
-#         fake.append(rating[0])
-#
-# print(fake)
+for i, rating in enumerate(ratingsTesting):
+    if (float(rating[1]) > 3.0) and rawPredict[i] == 'neg':
+        fake.append(rating[0])
+    elif (float(rating[1]) < 3.0) and rawPredict[i] == 'pos':
+        fake.append(rating[0])
+print(fake)
