@@ -35,5 +35,5 @@ stemmedPosLex = set(lexStemmer(posLex))
 stemmedNegLex = set(lexStemmer(negLex))
 print(stemmedPosLex)
 print(stemmedNegLex)
-print(porter.stem("problems"))
+print(porter.stem("working"))
 

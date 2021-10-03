@@ -9,11 +9,9 @@ from pathlib import Path
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
-from nltk.corpus import opinion_lexicon
 from sklearn.linear_model import LogisticRegression
 #nltk.download("punkt")
 #nltk.download("stopwords")
-#nltk.download('opinion_lexicon')
 
 
 # Reads each file in directory and adds to list that will be returned
@@ -27,7 +25,7 @@ def readFiles(filePath):
     return strList
 
 
-# Method for stemming a list derived from nltk lexicons
+# Method for stemming a list
 def lexStemmer(lexicon):
     stemmedLexicon = []
     for word in lexicon:
@@ -108,8 +106,20 @@ def featureCount(x):
 # Lexicons for LR features:
 print("formatting lexicons...")
 porter = PorterStemmer()
-posLex = ['amazing', 'amazingly', 'awesome', 'awesomely', 'well-made', 'beautiful', 'beautifully', 'great', 'fantastic', 'fantastically', 'smooth', 'smoothly', 'cool', 'perfect', 'perfectly', 'fast', 'highly', 'flawless', 'flawlessly', 'brilliant', 'brilliantly', 'speedily', 'swift', 'swiftly', 'terrific', 'terrifically', 'superb', 'superbly', 'cleanest', 'legendary', 'crisp', 'immaculate', 'bargain', 'glad', 'pleased', 'pleasing', 'happy', 'joy', 'steal', 'best']
-negLex = ['terrible', 'terribly', 'awful', 'awfully', 'slow', 'slowly', 'horrible', 'horribly', 'junk', 'worst', 'sucks', 'sucked', 'ugly', 'hideous', 'hideously', 'weak', 'crap', 'shit', 'useless', 'broken', 'waste', 'scam', 'scammed', 'noisy', 'laggy', 'lags', 'lagging', 'stupid', 'stupidly', 'dumb', 'unsatisfactory', 'inadequate', 'inadequately', 'incompetent', 'incompetently', 'difficult', 'retarded', 'garbage', 'trash']
+posLex = ['amazing', 'amazingly', 'awesome', 'awesomely', 'well-made', 'beautiful',
+          'beautifully', 'great', 'fantastic', 'fantastically', 'wonderful', 'wonderfully',
+          'smooth', 'smoothly', 'cool', 'perfect', 'perfectly', 'fast', 'highly',
+          'flawless', 'flawlessly', 'brilliant', 'brilliantly', 'speedily', 'swift',
+          'swiftly', 'terrific', 'terrifically', 'superb', 'superbly', 'cleanest',
+          'legendary', 'crisp', 'immaculate', 'bargain', 'pleasing', 'happy', 'joy',
+          'steal', 'best']
+negLex = ['terrible', 'terribly', 'awful', 'awfully', 'slow', 'slowly',
+          'horrible', 'horribly', 'junk', 'worst', 'sucks', 'sucked', 'ugly',
+          'hideous', 'hideously', 'weak', 'crap', 'shit', 'useless', 'broken',
+          'waste', 'scam', 'scammed', 'noisy', 'stopped', 'send', 'sending',
+          'laggy', 'lags', 'lagging', 'stupid', 'stupidly', 'dumb', 'unsatisfactory',
+          'inadequate', 'inadequately', 'incompetent', 'incompetently', 'difficult',
+          'garbage', 'trash', 'poor', 'poorly', 'defective']
 
 stemmedPosLex = set(lexStemmer(posLex))
 stemmedNegLex = set(lexStemmer(negLex))
@@ -145,7 +155,7 @@ for rating in posRatingsSplit:
 for rating in negRatingsSplit:
     negSepRatings.append(rating.split(" "))
 
-# Append 'P' for postive, 'N' for negative to identify which directory it came from for later
+# Append 'P' for positive, 'N' for negative to identify which directory it came from for later
 for rating in posSepRatings:
     rating[0] = 'P' + rating[0]
 
@@ -288,7 +298,7 @@ testTrueNeg = uncutTestTrueNeg.iloc[:, 0:6]
 # Train LR classifier on data
 print("beginning logistic regression...")
 print("         Ignore warning below         ")
-logRegression = LogisticRegression(solver='sag') # class_weight=[1, -1, -3, 2, 3, -3]
+logRegression = LogisticRegression(solver='sag', fit_intercept=True) # class_weight=[1, -1, -5, 3, -3, -3] {'f1': 1, 'f2': 1, 'f3':5, 'f4':3, 'f5':3, 'f6':3}
 logRegression.fit(xTrain, yTrain)
 print("logistic regression training done.")
 
