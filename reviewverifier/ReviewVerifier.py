@@ -231,10 +231,12 @@ classifier.show_most_informative_features()
 print("testing NB classifier...")
 truesets = collections.defaultdict(set)
 classifiersets = collections.defaultdict(set)
+nbPredictions = []
 for i, (doc, label) in enumerate(nbTestData):
   truesets[label].add(i)
   observed = classifier.classify(doc)
   classifiersets[observed].add(i)
+  nbPredictions.append(observed)
 
 # Shows true and classifer sets
 #print(truesets)
@@ -270,7 +272,7 @@ f8          bigrams "not \(negative word)"      1
 f9          bigrams "very \(positive word)"     5
 f10         bigrams "very \(negative word)"     -5
 '''
-# Sample weights = [1, -1, -5, 3, -3, -3]
+# Sample weights = [1, -1, -5, 3, -3, -3, -1, 1, 5, -5]
 
 # Using the same split, reformat training and testing data for LR classifer
 print("formatting data for LR...")
@@ -310,7 +312,7 @@ testTrueNeg = uncutTestTrueNeg.iloc[:, 0:10]
 # Train LR classifier on data
 print("beginning logistic regression...")
 print("         Ignore warning below         ")
-logRegression = LogisticRegression(solver='sag', fit_intercept=True) # class_weight=[1, -1, -5, 3, -3, -3] {'f1': 1, 'f2': 1, 'f3':5, 'f4':3, 'f5':3, 'f6':3}
+logRegression = LogisticRegression(solver='sag', fit_intercept=True) # class_weight=[1, -1, -5, 3, -3, -3, -1, 1, 5, -5]
 logRegression.fit(xTrain, yTrain)
 print("logistic regression training done.")
 
@@ -370,11 +372,13 @@ for result in predictedFromTrueNeg:
 rawResults = truePosResults + trueNegResults
 actualRatings = uncutTestTruePos['rating'].tolist() + uncutTestTrueNeg['rating'].tolist()
 
-fake = []
+lrFake = []
 for i, rating in enumerate(actualRatings):
     if (float(rating[1]) > 3.0) and rawResults[i] == 0:
-        fake.append(rating)
+        lrFake.append(rating)
     elif (float(rating[1]) < 3.0) and rawResults[i] == 1:
-        fake.append(rating)
-print(fake)
+        lrFake.append(rating)
+print("Fake reviews identified w/ LR:")
+print(lrFake)
+print(len(lrFake))
 print("Note that this is using the LR classifier, so results are not going to be entirely accurate.")
