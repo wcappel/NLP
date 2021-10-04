@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from nltk.corpus import opinion_lexicon
 #nltk.download("punkt")
 #nltk.download("stopwords")
-#nltk.download("opinion_lexicon")
+nltk.download("opinion_lexicon")
 
 
 # Reads each file in directory and adds to list that will be returned along w/ file #
@@ -37,9 +37,11 @@ def readRatings(filePath):
         strList.append(text)
     return strList
 
+
 # Key function for list.sort() to sort files by file #
 def takeFileNum(item):
     return item[1]
+
 
 # Method for stemming a list
 def lexStemmer(lexicon):
@@ -208,7 +210,6 @@ random.shuffle(ratings)
 training = labeledReviews[0:(int)(len(labeledReviews)/2)]
 testing = labeledReviews[(int)(len(labeledReviews)/2):]
 ratingsTesting = ratings[(int)(len(ratings)/2):]
-#print(ratingsTesting)
 
 # Generating tokens
 trainTokens = set(word for words in training for word in word_tokenize(words[0]))
@@ -233,14 +234,10 @@ truesets = collections.defaultdict(set)
 classifiersets = collections.defaultdict(set)
 nbPredictions = []
 for i, (doc, label) in enumerate(nbTestData):
-  truesets[label].add(i)
-  observed = classifier.classify(doc)
-  classifiersets[observed].add(i)
-  nbPredictions.append(observed)
-
-# Shows true and classifer sets
-#print(truesets)
-#print(classifiersets)
+    truesets[label].add(i)
+    observed = classifier.classify(doc)
+    classifiersets[observed].add(i)
+    nbPredictions.append(observed)
 
 # Calculate positive/negative precision and recall
 print("evaluating classifier...")
@@ -299,7 +296,6 @@ for review in lrTesting:
 print("building dataframes...")
 trainFrame = pandas.DataFrame(formattedTraining, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class', 'rating'])
 testFrame = pandas.DataFrame(formattedTesting, columns=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'class', 'rating'])
-#print(trainFrame)
 
 # Get doc. # w/ feature columns from dataframe
 xTrain = trainFrame.iloc[:, 0:10]
@@ -319,7 +315,6 @@ logRegression = LogisticRegression(solver='sag', fit_intercept=True, class_weigh
 # ? Potential class_weight=[1, -1, -5, 3, -3, -3, -1, 1, 5, -5]
 logRegression.fit(xTrain, yTrain)
 print("logistic regression training done.")
-
 
 # Testing LR classifier
 print("testing LR classifier...")
