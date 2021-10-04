@@ -14,7 +14,6 @@ from nltk.corpus import opinion_lexicon
 #nltk.download("punkt")
 #nltk.download("stopwords")
 nltk.download("opinion_lexicon")
-print("'opinion_lexicon' should be downloaded")
 
 
 # Reads each file in directory and adds to list that will be returned along w/ file #
@@ -123,9 +122,9 @@ def featureCount(x):
     return frequencies
 
 
-# 'Main' starts here:
 # Lexicons for LR features:
 print("formatting lexicons...")
+print("please make sure 'opinion_lexicon' is downloaded")
 porter = PorterStemmer()
 nltkPosLex = opinion_lexicon.positive()
 nltkNegLex = opinion_lexicon.negative()
@@ -176,14 +175,12 @@ for rating in posRatingsSplit:
 for rating in negRatingsSplit:
     negSepRatings.append(rating.split(" "))
 
-# Append 'P' for positive, 'N' for negative to identify which directory it came from for later
+# Prefixes 'P' for positive, 'N' for negative to identify which directory it came from for later
 for rating in posSepRatings:
     rating[0] = 'P' + rating[0]
 
 for rating in negSepRatings:
     rating[0] = 'N' + rating[0]
-
-ratings = posSepRatings + negSepRatings
 
 # Case fold and remove punct.
 posReviews = removePunct(labeledPosReviews)
@@ -205,14 +202,9 @@ for i, document in enumerate(negReviews):
     labeledReviews.append((document, "neg", negSepRatings[i]))
 
 # Randomizing and splitting data for training and testing, use same random value for ratings
-seed = random.randint(0, 2147483647)
-random.seed(seed)
 random.shuffle(labeledReviews)
-random.seed(seed)
-random.shuffle(ratings)
 training = labeledReviews[0:(int)(len(labeledReviews)/2)]
 testing = labeledReviews[(int)(len(labeledReviews)/2):]
-ratingsTesting = ratings[(int)(len(ratings)/2):]
 
 # Generating tokens
 trainTokens = set(word for words in training for word in word_tokenize(words[0]))
@@ -383,5 +375,5 @@ for i, rating in enumerate(actualRatings):
         lrFake.append(rating)
 print("Potentially fake reviews identified w/ LR:")
 print(lrFake)
-print("# of reviews identified as fake")
+print("# of reviews identified as potentially fake:")
 print(len(lrFake))
