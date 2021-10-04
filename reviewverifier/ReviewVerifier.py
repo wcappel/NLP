@@ -157,8 +157,6 @@ for review in labeledNegReviews:
 labeledPosReviews = tempPosList
 labeledNegReviews = tempNegList
 
-print(labeledPosReviews)
-
 
 # Split ratings from each file into list w/ # and rating
 print("preprocessing data...")
@@ -379,3 +377,4 @@ for i, rating in enumerate(actualRatings):
     elif (float(rating[1]) < 3.0) and rawResults[i] == 1:
         fake.append(rating)
 print(fake)
+print("Note that this is using the LR classifier, so results are not going to be entirely accurate.")
