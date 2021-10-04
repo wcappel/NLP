@@ -98,7 +98,6 @@ def featureCount(x):
     restrung = " ".join(x[0])
     reviewBigrams = list(nltk.bigrams(restrung.split()))
     for bigram in reviewBigrams:
-        #print(bigram)
         if (bigram[0] == 'dont' and bigram[1] == 'buy') or (bigram[0] == 'not' and bigram[1] == 'buy'):
             frequencies[4] += 1
         elif (bigram[0] == 'not') and bigram[1] == 'work':
@@ -109,16 +108,15 @@ def featureCount(x):
             frequencies[6] += 1
         elif (bigram[0] == 'not') and bigram[1] in stemmedNegLex:
             frequencies[7] += 1
-        elif (bigram[0] == 'very' or 'really') and bigram[1] in stemmedPosLex:
+        elif (bigram[0] == 'veri' or 'realli') and bigram[1] in stemmedPosLex:
             frequencies[8] += 1
-        elif (bigram[0] == 'very' or 'really') and bigram[1] in stemmedNegLex:
+        elif (bigram[0] == 'veri' or 'realli') and bigram[1] in stemmedNegLex:
             frequencies[9] += 1
     if x[1] == 'pos':
         frequencies[-2] = 1
     elif x[1] == 'neg':
         frequencies[-2] = 0
     frequencies[-1] = x[2]
-    #print(frequencies)
     return frequencies
 
 
