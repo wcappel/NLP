@@ -14,6 +14,7 @@ from nltk.corpus import opinion_lexicon
 #nltk.download("punkt")
 #nltk.download("stopwords")
 nltk.download("opinion_lexicon")
+print("'opinion_lexicon' should be downloaded")
 
 
 # Reads each file in directory and adds to list that will be returned along w/ file #
@@ -62,11 +63,13 @@ def removePunct(reviews):
 
 
 # Formats data for NLTK NB classifier
-def formatForNB(reviews):
+def formatForNB(reviews, tokens):
     result = []
     for x in reviews:
         doc_tokens = word_tokenize(x[0])
-        dictionary = {word: (word in doc_tokens) for word in trainTokens}
+        dictionary = {}
+        for t in tokens:
+            dictionary[t] = t in doc_tokens
         newTup = (dictionary, x[1])
         result.append(newTup)
     return result
@@ -217,8 +220,8 @@ testTokens = set(word for words in testing for word in word_tokenize(words[0]))
 
 # Tokenizing and formatting for NB
 print("started formatting data for NB classifier...")
-nbTrainData = formatForNB(training)
-nbTestData = formatForNB(testing)
+nbTrainData = formatForNB(training, trainTokens)
+nbTestData = formatForNB(testing, testTokens)
 print("finished formatting data for NB.")
 
 # NB classifer training w/ training dataset
@@ -270,10 +273,10 @@ f3          contains "refund" or "return"       -5 (each adds to count)
 f4          bigrams "no problem"                3
 f5          bigrams "dont buy" or "not buy"     -3
 f6          bigrams "not work"                  -3
-f7          bigrams "not \(positive word)"      -1
-f8          bigrams "not \(negative word)"      1
-f9          bigrams "very \(positive word)"     5
-f10         bigrams "very \(negative word)"     -5
+f7          bigrams "not (positive word)"      -1
+f8          bigrams "not (negative word)"      1
+f9          bigrams "very (positive word)"     5
+f10         bigrams "very (negative word)"     -5
 '''
 
 # Using the same split, reformat training and testing data for LR classifer
@@ -378,7 +381,7 @@ for i, rating in enumerate(actualRatings):
         lrFake.append(rating)
     elif (float(rating[1]) < 3.0) and rawResults[i] == 1:
         lrFake.append(rating)
-print("Fake reviews identified w/ LR:")
+print("Potentially fake reviews identified w/ LR:")
 print(lrFake)
 print("# of reviews identified as fake")
 print(len(lrFake))
