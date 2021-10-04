@@ -4,7 +4,7 @@ import random
 import collections
 import nltk.metrics
 import pandas
-from nltk.metrics.scores import (precision, recall)
+from nltk.metrics.scores import (precision, recall, f_measure)
 from pathlib import Path
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -13,9 +13,10 @@ from sklearn.linear_model import LogisticRegression
 from nltk.corpus import opinion_lexicon
 #nltk.download("punkt")
 #nltk.download("stopwords")
+#nltk.download("opinion_lexicon")
 
 
-# Reads each file in directory and adds to list that will be returned
+# Reads each file in directory and adds to list that will be returned along w/ file #
 def readFiles(filePath):
     files = []
     for file in filePath:
@@ -26,6 +27,7 @@ def readFiles(filePath):
     return files
 
 
+# Reads ratings files
 def readRatings(filePath):
     strList = []
     for file in filePath:
@@ -78,7 +80,6 @@ def reformatForLR(notFormatted):
 
 
 # Given a review, returns list of features counts with class appended
-# Parameter 'x' will look like: (['A', 'sentence'], pos)
 def featureCount(x):
     frequencies = [0] * 12
     for w in x[0]:
@@ -197,7 +198,6 @@ for i, document in enumerate(negReviews):
         if word not in stopWords:
             newDoc = " ".join(porter.stem(word))
     labeledReviews.append((document, "neg", negSepRatings[i]))
-#print(labeledReviews)
 
 # Randomizing and splitting data for training and testing, use same random value for ratings
 seed = random.randint(0, 2147483647)
@@ -249,6 +249,8 @@ pos_precision = precision(truesets['pos'], classifiersets['pos'])
 neg_precision = precision(truesets["neg"], classifiersets["neg"])
 pos_recall = recall(truesets['pos'], classifiersets['pos'])
 neg_recall = recall(truesets["neg"], classifiersets["neg"])
+pos_f = f_measure(truesets['pos'], classifiersets['pos'])
+neg_f = f_measure(truesets["neg"], classifiersets["neg"])
 print("Positive precision: ")
 print(pos_precision)
 print("Negative precision: ")
@@ -257,6 +259,10 @@ print("Positive recall: ")
 print(pos_recall)
 print("Negative recall: ")
 print(neg_recall)
+print("Positive f-measure: ")
+print(pos_f)
+print("Negative f-measure: ")
+print(neg_f)
 
 # Feature table for LR
 '''
@@ -272,7 +278,6 @@ f8          bigrams "not \(negative word)"      1
 f9          bigrams "very \(positive word)"     5
 f10         bigrams "very \(negative word)"     -5
 '''
-# Sample weights = [1, -1, -5, 3, -3, -3, -1, 1, 5, -5]
 
 # Using the same split, reformat training and testing data for LR classifer
 print("formatting data for LR...")
@@ -307,14 +312,14 @@ uncutTestTruePos = testFrame.loc[testFrame['class'] == 1]
 uncutTestTrueNeg = testFrame.loc[testFrame['class'] == 0]
 testTruePos = uncutTestTruePos.iloc[:, 0:10]
 testTrueNeg = uncutTestTrueNeg.iloc[:, 0:10]
-#print(testTruePos)
 
 # Train LR classifier on data
 print("beginning logistic regression...")
-print("         Ignore warning below         ")
-logRegression = LogisticRegression(solver='sag', fit_intercept=True) # class_weight=[1, -1, -5, 3, -3, -3, -1, 1, 5, -5]
+logRegression = LogisticRegression(solver='sag', fit_intercept=True, class_weight='balanced', max_iter=1000)
+# ? Potential class_weight=[1, -1, -5, 3, -3, -3, -1, 1, 5, -5]
 logRegression.fit(xTrain, yTrain)
 print("logistic regression training done.")
+
 
 # Testing LR classifier
 print("testing LR classifier...")
@@ -380,5 +385,5 @@ for i, rating in enumerate(actualRatings):
         lrFake.append(rating)
 print("Fake reviews identified w/ LR:")
 print(lrFake)
+print("# of reviews identified as fake")
 print(len(lrFake))
-print("Note that this is using the LR classifier, so results are not going to be entirely accurate.")
