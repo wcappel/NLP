@@ -17,6 +17,16 @@ from nltk.corpus import opinion_lexicon
 
 # Reads each file in directory and adds to list that will be returned
 def readFiles(filePath):
+    files = []
+    for file in filePath:
+        current = open(file, 'r')
+        text = current.read()
+        current.close()
+        files.append([text, int(''.join(char for char in file.name if char.isdigit()))])
+    return files
+
+
+def readRatings(filePath):
     strList = []
     for file in filePath:
         current = open(file, 'r')
@@ -25,6 +35,9 @@ def readFiles(filePath):
         strList.append(text)
     return strList
 
+# Key function for list.sort() to sort files by file #
+def takeFileNum(item):
+    return item[1]
 
 # Method for stemming a list
 def lexStemmer(lexicon):
@@ -79,7 +92,6 @@ def featureCount(x):
             frequencies[1] += 1
     restrung = " ".join(x[0])
     reviewBigrams = list(nltk.bigrams(restrung.split()))
-    reviewTrigrams = list(nltk.ngrams(restrung.split(), 3))
     for bigram in reviewBigrams:
         #print(bigram)
         if (bigram[0] == 'dont' and bigram[1] == 'buy') or (bigram[0] == 'not' and bigram[1] == 'buy'):
@@ -132,8 +144,21 @@ negRatingsFile = [neg for neg in negRatingsPath]
 
 labeledPosReviews = readFiles(posFiles)
 labeledNegReviews = readFiles(negFiles)
-posRatings = readFiles(posRatingsFile)
-negRatings = readFiles(negRatingsFile)
+posRatings = readRatings(posRatingsFile)
+negRatings = readRatings(negRatingsFile)
+labeledPosReviews.sort(key=takeFileNum)
+labeledNegReviews.sort(key=takeFileNum)
+tempPosList = []
+tempNegList = []
+for review in labeledPosReviews:
+    tempPosList.append(review[0])
+for review in labeledNegReviews:
+    tempNegList.append(review[0])
+labeledPosReviews = tempPosList
+labeledNegReviews = tempNegList
+
+print(labeledPosReviews)
+
 
 # Split ratings from each file into list w/ # and rating
 print("preprocessing data...")
