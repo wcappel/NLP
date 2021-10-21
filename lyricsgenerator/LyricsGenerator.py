@@ -1,6 +1,7 @@
 import torch
+import random
 from pathlib import Path
-from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizer, BertModel, BertForNextSentencePrediction
 
 
 # Reads each text line of file in directory and adds to a list passed as a parameter
@@ -22,6 +23,14 @@ def tokenizeLyrics(lyrics):
         lyric = "[CLS] " + lyric + " [SEP]"
         tokenizedLyrics.append(tokenizer.tokenize(lyric))
     return tokenizedLyrics
+
+
+# Filters tokens to not get duds
+def filterTokens(tokens):
+    newTokens = []
+    for lyric in tokens:
+        if len(lyric) >= 4:
+            newTokens.append(lyric)
 
 
 # File paths for each directory of lyrics
@@ -66,5 +75,35 @@ while not goodInput:
             print("Only options are: pop, rock, metal, or country.")
     else:
         print("Only options are: pop, rock, metal, or country.")
+
+selectedLyrics = []
+if inputGenre == 'pop':
+    selectedLyrics = popTokenized
+elif input == 'rock':
+    selectedLyrics = rockTokenized
+elif input == 'metal':
+    selectedLyrics = metalTokenized
+else:
+    selectedLyrics = countryTokenized
+
+filterTokens(selectedLyrics)
+randomNum = random.randint(1, len(selectedLyrics))
+newRandomNum = random.randint(1, len(selectedLyrics))
+while (newRandomNum == randomNum):
+    newRandomNum = random.randint(1, len(selectedLyrics))
+initialLyric = selectedLyrics[randomNum]
+otherLyric = selectedLyrics[newRandomNum]
+print(initialLyric)
+
+initialIndexedTokens = tokenizer.convert_tokens_to_ids(initialLyric)
+initialSegmentsIDs = [1] * len(initialLyric)
+initialTokensTensor = torch.tensor([initialIndexedTokens])
+initialSegmentsTensor = torch.tensor([initialSegmentsIDs])
+
+bertModel = BertForNextSentencePrediction('bert-base-uncased', output_hidden_states=True)
+bertModel.eval()
+
+
+
 
 
