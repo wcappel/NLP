@@ -54,6 +54,17 @@ metalTokenized = tokenizeLyrics(metalLyrics)
 popTokenized = tokenizeLyrics(popLyrics)
 rockTokenized = tokenizeLyrics(rockLyrics)
 
-
+goodInput = False
+inputGenre = ""
+while not goodInput:
+    inputGenre = input("Enter the genre of lyrics you wish to generate (pop, country, metal, or rock): ")
+    if type(inputGenre) is str:
+        inputGenre = inputGenre.lower()
+        if (inputGenre == 'pop') or (inputGenre == 'country') or (inputGenre == 'metal') or (inputGenre == 'rock'):
+            break
+        else:
+            print("Only options are: pop, rock, metal, or country.")
+    else:
+        print("Only options are: pop, rock, metal, or country.")
 
 
