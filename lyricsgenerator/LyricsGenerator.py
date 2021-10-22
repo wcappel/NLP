@@ -100,8 +100,8 @@ initialSegmentsIDs = [1] * len(initialLyric)
 initialTokensTensor = torch.tensor([initialIndexedTokens])
 initialSegmentsTensor = torch.tensor([initialSegmentsIDs])
 
-bertModel = BertForNextSentencePrediction('bert-base-uncased', output_hidden_states=True)
-bertModel.eval()
+model = BertForNextSentencePrediction('bert-base-uncased', output_hidden_states=True)
+model.eval()
 
 
 
