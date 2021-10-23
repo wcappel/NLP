@@ -2,35 +2,38 @@ import torch
 import random
 from pathlib import Path
 from transformers import BertTokenizer, BertModel, BertForNextSentencePrediction
+from transformers import Trainer, TrainingArguments, TextDatasetForNextSentencePrediction, DataCollatorForLanguageModeling
 
 
-# Reads each text line of file in directory and adds to a list passed as a parameter
-def readFiles(filePath, files):
-    for file in filePath:
-        current = open(file, 'r')
-        text = current.read()
-        text = text.split("\n")
-        current.close()
-        for line in text:
-            files.append(line)
-    return files
+# Formats lyrics from genre directory into format to train model
+def formatTuningFile(filePath):
+    with open("tuning.txt", mode="w") as output:
+        for file in filePath:
+            current = open(file, 'r')
+            text = current.read()
+            text = text.split("\n")
+            addNL = False
+            if len(text) % 2 != 0:
+                addNL = True
+            current.close()
+            for i, line in enumerate(text):
+                if addNL and line is text[-1]:
+                    continue
+                elif i % 2 != 0:
+                    output.write(line)
+                    output.write("\n\n")
+                else:
+                    output.write(line)
+                    output.write("\n")
 
 
 # Tokenizes each lyric along w/ special differentiating tokens
-def tokenizeLyrics(lyrics):
+def tokenizeLyrics(lyrics, tokenizer):
     tokenizedLyrics = []
     for lyric in lyrics:
         lyric = "[CLS] " + lyric + " [SEP]"
         tokenizedLyrics.append(tokenizer.tokenize(lyric))
     return tokenizedLyrics
-
-
-# Filters tokens to not get duds
-def filterTokens(tokens):
-    newTokens = []
-    for lyric in tokens:
-        if len(lyric) >= 4:
-            newTokens.append(lyric)
 
 
 # File paths for each directory of lyrics
@@ -45,24 +48,7 @@ metalFiles = [x for x in metalFolder]
 popFiles = [x for x in popFolder]
 rockFiles = [x for x in rockFolder]
 
-# Adds all lyrics by line in file to list
-countryLyrics = []
-metalLyrics = []
-popLyrics = []
-rockLyrics = []
-readFiles(countryFiles, countryLyrics)
-readFiles(metalFiles, metalLyrics)
-readFiles(popFiles, popLyrics)
-readFiles(rockFiles, rockLyrics)
-
-# Remove stop words and punctuation? Prob. not bc. will be in same place in embeddings
-# Tokenize lyrics
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-countryTokenized = tokenizeLyrics(countryLyrics)
-metalTokenized = tokenizeLyrics(metalLyrics)
-popTokenized = tokenizeLyrics(popLyrics)
-rockTokenized = tokenizeLyrics(rockLyrics)
-
+# Takes user input to choose genre of lyrics
 goodInput = False
 inputGenre = ""
 while not goodInput:
@@ -77,33 +63,46 @@ while not goodInput:
         print("Only options are: pop, rock, metal, or country.")
 
 selectedLyrics = []
+pathString = ""
 if inputGenre == 'pop':
-    selectedLyrics = popTokenized
+    selectedLyrics = popFiles
+    pathString = './popModel'
 elif input == 'rock':
-    selectedLyrics = rockTokenized
+    selectedLyrics = rockFiles
+    pathString = './rockModel'
 elif input == 'metal':
-    selectedLyrics = metalTokenized
+    selectedLyrics = metalFiles
+    pathString = './metalModel'
 else:
-    selectedLyrics = countryTokenized
+    selectedLyrics = countryFiles
+    pathString = './countryModel'
 
-filterTokens(selectedLyrics)
-randomNum = random.randint(1, len(selectedLyrics))
-newRandomNum = random.randint(1, len(selectedLyrics))
-while (newRandomNum == randomNum):
-    newRandomNum = random.randint(1, len(selectedLyrics))
-initialLyric = selectedLyrics[randomNum]
-otherLyric = selectedLyrics[newRandomNum]
-print(initialLyric)
+# Randomly shuffles songs for tuning and generating
+random.shuffle(selectedLyrics)
+generatorFiles = selectedLyrics[0:(int)(len(selectedLyrics)/5)]
+tuningFiles = selectedLyrics[(int)(len(selectedLyrics)/5):]
 
-initialIndexedTokens = tokenizer.convert_tokens_to_ids(initialLyric)
-initialSegmentsIDs = [1] * len(initialLyric)
+# Formats lyrics to put in text file to tune BERT
+formatTuningFile(countryFiles)
+
+# trainingArguments = TrainingArguments(output_dir="pathString", overwrite_output_dir=True)
+# bertModel = BertForNextSentencePrediction.from_pretrained('bert-base-uncased')
+# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+# tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=64)
+# dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer)
+# trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
+# trainer.train()
+# trainer.save_model(pathString)
+
+model = BertForNextSentencePrediction.from_pretrained("./tuningOutput")
+tokenizer = BertTokenizer.from_pretrained("./tuningOutput")
+lyricEx = ["As he sang his song of hope for the last time"]
+tokenizedLyricList = tokenizeLyrics(lyricEx, tokenizer)
+tokenizedLyric = tokenizedLyricList[0]
+print(tokenizedLyric)
+initialIndexedTokens = tokenizer.convert_tokens_to_ids(tokenizedLyric)
+initialSegmentsIDs = [1] * len(tokenizedLyric)
 initialTokensTensor = torch.tensor([initialIndexedTokens])
 initialSegmentsTensor = torch.tensor([initialSegmentsIDs])
-
-model = BertForNextSentencePrediction('bert-base-uncased', output_hidden_states=True)
-model.eval()
-
-
-
-
-
+outputs = model(initialSegmentsTensor, initialTokensTensor)
+print(outputs)
