@@ -1,7 +1,7 @@
 import torch
 import random
 from pathlib import Path
-from transformers import BertTokenizer, BertModel, BertForNextSentencePrediction
+from transformers import BertTokenizer, BertForPreTraining, BertForNextSentencePrediction, BertForMaskedLM
 from transformers import Trainer, TrainingArguments, TextDatasetForNextSentencePrediction, DataCollatorForLanguageModeling
 
 
@@ -77,32 +77,46 @@ else:
     selectedLyrics = countryFiles
     pathString = './countryModel'
 
-# Randomly shuffles songs for tuning and generating
-random.shuffle(selectedLyrics)
+# Splits songs for tuning and generating
 generatorFiles = selectedLyrics[0:(int)(len(selectedLyrics)/5)]
 tuningFiles = selectedLyrics[(int)(len(selectedLyrics)/5):]
 
 # Formats lyrics to put in text file to tune BERT
-formatTuningFile(countryFiles)
+formatTuningFile(selectedLyrics)
 
-# trainingArguments = TrainingArguments(output_dir="pathString", overwrite_output_dir=True)
-# bertModel = BertForNextSentencePrediction.from_pretrained('bert-base-uncased')
-# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-# tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=64)
-# dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer)
-# trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
-# trainer.train()
-# trainer.save_model(pathString)
+# def trainModel(model, tokenizer, dataset, outputPath):
 
-model = BertForNextSentencePrediction.from_pretrained("./tuningOutput")
-tokenizer = BertTokenizer.from_pretrained("./tuningOutput")
-lyricEx = ["As he sang his song of hope for the last time"]
-tokenizedLyricList = tokenizeLyrics(lyricEx, tokenizer)
-tokenizedLyric = tokenizedLyricList[0]
-print(tokenizedLyric)
-initialIndexedTokens = tokenizer.convert_tokens_to_ids(tokenizedLyric)
-initialSegmentsIDs = [1] * len(tokenizedLyric)
-initialTokensTensor = torch.tensor([initialIndexedTokens])
-initialSegmentsTensor = torch.tensor([initialSegmentsIDs])
-outputs = model(initialSegmentsTensor, initialTokensTensor)
-print(outputs)
+
+'''Remember to stick training code in another file or tell her it's commented out'''
+bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=256)
+dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
+trainingArguments = TrainingArguments(output_dir="pathString", overwrite_output_dir=True)
+trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
+trainer.train()
+trainer.save_model(pathString)
+
+# model = BertForPreTraining.from_pretrained("./pathString")  # replace "./tuningOutput" w/ pathString
+# tokenizer = BertTokenizer.from_pretrained("./pathString")  # Here too
+# model.eval()
+# lyric1 = ["You know it's true, oh"]
+# lyric2 = ["All the things come back to you"]
+# encoding = tokenizer(lyric1, lyric2, return_tensors='pt')
+# outputs = model(**encoding, labels=torch.LongTensor([1]))
+# print(outputs)
+# logits = outputs.logits
+# print(logits)
+# print(logits[0, 0] < logits[0, 1])
+# print(logits[0, 0])
+
+
+# tokenizedLyricList = tokenizeLyrics(lyricEx, tokenizer)
+# tokenizedLyric = tokenizedLyricList[0]
+# print(tokenizedLyric)
+# initialIndexedTokens = tokenizer.convert_tokens_to_ids(tokenizedLyric)
+# initialSegmentsIDs = [1] * len(tokenizedLyric)
+# initialTokensTensor = torch.tensor([initialIndexedTokens])
+# initialSegmentsTensor = torch.tensor([initialSegmentsIDs])
+# outputs = model(initialSegmentsTensor, initialTokensTensor)
+# print(outputs) # True = random, False = was not random
