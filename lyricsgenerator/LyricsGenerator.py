@@ -1,8 +1,8 @@
 import torch
 import random
 from pathlib import Path
-from transformers import BertTokenizer, BertForPreTraining, BertForNextSentencePrediction, BertForMaskedLM
-from transformers import Trainer, TrainingArguments, TextDatasetForNextSentencePrediction, DataCollatorForLanguageModeling
+from transformers import BertTokenizer, BertForPreTraining, Trainer, TrainingArguments
+from transformers import TextDatasetForNextSentencePrediction, DataCollatorForLanguageModeling
 
 
 # Formats lyrics from genre directory into format to train model
@@ -83,8 +83,6 @@ tuningFiles = selectedLyrics[(int)(len(selectedLyrics)/5):]
 # Formats lyrics to put in text file to tune BERT
 formatTuningFile(selectedLyrics)
 
-# def trainModel(model, tokenizer, dataset, outputPath):
-
 # Training model on data with masking
 '''Remember to stick training code in another file or tell her it's commented out'''
 bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
@@ -104,17 +102,17 @@ else:
 
 # Selecting model that was saved (have to use new string literal every time bc. the parameter is dumb lol)
 if inputGenre == 'pop':
-    model = BertForPreTraining.from_pretrained("./popModel")  # replace "./tuningOutput" w/ pathString
-    tokenizer = BertTokenizer.from_pretrained("./popModel")  # Here too
+    model = BertForPreTraining.from_pretrained("./popModel")
+    tokenizer = BertTokenizer.from_pretrained("./popModel")
 elif inputGenre == "rock":
-    model = BertForPreTraining.from_pretrained("./rockModel")  # replace "./tuningOutput" w/ pathString
-    tokenizer = BertTokenizer.from_pretrained("./rockModel")  # Here too
+    model = BertForPreTraining.from_pretrained("./rockModel")
+    tokenizer = BertTokenizer.from_pretrained("./rockModel")
 elif inputGenre == "metal":
-    model = BertForPreTraining.from_pretrained("./metalModel")  # replace "./tuningOutput" w/ pathString
-    tokenizer = BertTokenizer.from_pretrained("./metalModel")  # Here too
+    model = BertForPreTraining.from_pretrained("./metalModel")
+    tokenizer = BertTokenizer.from_pretrained("./metalModel")
 else:
-    model = BertForPreTraining.from_pretrained("./countryModel")  # replace "./tuningOutput" w/ pathString
-    tokenizer = BertTokenizer.from_pretrained("./countryModel")  # Here too
+    model = BertForPreTraining.from_pretrained("./countryModel")
+    tokenizer = BertTokenizer.from_pretrained("./countryModel")
 
 model.eval()
 lyric1 = ["You know it's true, oh"]
@@ -122,10 +120,13 @@ lyric2 = ["All the things come back to you"]
 encoding = tokenizer(lyric1, lyric2, return_tensors='pt')
 outputs = model(**encoding, labels=torch.LongTensor([1]))
 #print(outputs)
-logits = outputs.seq_relationship_logits #use seq_relationship_logits for NSP, use prediction_logits for MLM
-print(logits)
-print(logits[0, 0] < logits[0, 1])
-print(logits[0, 0])
+nspLogits = outputs.seq_relationship_logits  # use seq_relationship_logits for NSP, use prediction_logits for MLM
+print(nspLogits)
+print(nspLogits[0, 0] < nspLogits[0, 1])
+print(nspLogits[0, 0])
+
+initialLyric = ""
+genSentenceLength = random.randint(2, len(initialLyric)+2)
 
 
 # tokenizedLyricList = tokenizeLyrics(lyricEx, tokenizer)
