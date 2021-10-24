@@ -63,19 +63,18 @@ while not goodInput:
         print("Only options are: pop, rock, metal, or country.")
 
 selectedLyrics = []
-pathString = ""
 if inputGenre == 'pop':
     selectedLyrics = popFiles
-    pathString = './popModel'
-elif input == 'rock':
+    trainingArguments = TrainingArguments(output_dir="./popModel", overwrite_output_dir=True)
+elif inputGenre == 'rock':
     selectedLyrics = rockFiles
-    pathString = './rockModel'
-elif input == 'metal':
+    trainingArguments = TrainingArguments(output_dir="./rockModel", overwrite_output_dir=True)
+elif inputGenre == 'metal':
     selectedLyrics = metalFiles
-    pathString = './metalModel'
+    trainingArguments = TrainingArguments(output_dir="./metalModel", overwrite_output_dir=True)
 else:
     selectedLyrics = countryFiles
-    pathString = './countryModel'
+    trainingArguments = TrainingArguments(output_dir="./countryModel", overwrite_output_dir=True)
 
 # Splits songs for tuning and generating
 generatorFiles = selectedLyrics[0:(int)(len(selectedLyrics)/5)]
@@ -86,29 +85,47 @@ formatTuningFile(selectedLyrics)
 
 # def trainModel(model, tokenizer, dataset, outputPath):
 
-
+# Training model on data with masking
 '''Remember to stick training code in another file or tell her it's commented out'''
 bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=256)
 dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
-trainingArguments = TrainingArguments(output_dir="pathString", overwrite_output_dir=True)
 trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
 trainer.train()
-trainer.save_model(pathString)
+if inputGenre == 'pop':
+    trainer.save_model("./popModel")
+elif inputGenre == "rock":
+    trainer.save_model("./rockModel")
+elif inputGenre == "metal":
+    trainer.save_model("./metalModel")
+else:
+    trainer.save_model("./countryModel")
 
-# model = BertForPreTraining.from_pretrained("./pathString")  # replace "./tuningOutput" w/ pathString
-# tokenizer = BertTokenizer.from_pretrained("./pathString")  # Here too
-# model.eval()
-# lyric1 = ["You know it's true, oh"]
-# lyric2 = ["All the things come back to you"]
-# encoding = tokenizer(lyric1, lyric2, return_tensors='pt')
-# outputs = model(**encoding, labels=torch.LongTensor([1]))
-# print(outputs)
-# logits = outputs.logits
-# print(logits)
-# print(logits[0, 0] < logits[0, 1])
-# print(logits[0, 0])
+# Selecting model that was saved (have to use new string literal every time bc. the parameter is dumb lol)
+if inputGenre == 'pop':
+    model = BertForPreTraining.from_pretrained("./popModel")  # replace "./tuningOutput" w/ pathString
+    tokenizer = BertTokenizer.from_pretrained("./popModel")  # Here too
+elif inputGenre == "rock":
+    model = BertForPreTraining.from_pretrained("./rockModel")  # replace "./tuningOutput" w/ pathString
+    tokenizer = BertTokenizer.from_pretrained("./rockModel")  # Here too
+elif inputGenre == "metal":
+    model = BertForPreTraining.from_pretrained("./metalModel")  # replace "./tuningOutput" w/ pathString
+    tokenizer = BertTokenizer.from_pretrained("./metalModel")  # Here too
+else:
+    model = BertForPreTraining.from_pretrained("./countryModel")  # replace "./tuningOutput" w/ pathString
+    tokenizer = BertTokenizer.from_pretrained("./countryModel")  # Here too
+
+model.eval()
+lyric1 = ["You know it's true, oh"]
+lyric2 = ["All the things come back to you"]
+encoding = tokenizer(lyric1, lyric2, return_tensors='pt')
+outputs = model(**encoding, labels=torch.LongTensor([1]))
+#print(outputs)
+logits = outputs.seq_relationship_logits #use seq_relationship_logits for NSP, use prediction_logits for MLM
+print(logits)
+print(logits[0, 0] < logits[0, 1])
+print(logits[0, 0])
 
 
 # tokenizedLyricList = tokenizeLyrics(lyricEx, tokenizer)
