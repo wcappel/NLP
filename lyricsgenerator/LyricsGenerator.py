@@ -50,7 +50,6 @@ def genSingleLyric(initialLyric):
     while genLength > 0:
         maskedLyric = initialLyric + " [MASK]"
         predicted = predictMasked(maskedLyric)
-        print(predicted)
         for word in predicted:
             if len(word) > 1 and word != prevLyric:
                 prevLyric = word
