@@ -27,13 +27,52 @@ def formatTuningFile(filePath):
                     output.write("\n")
 
 
-# Tokenizes each lyric along w/ special differentiating tokens
-def tokenizeLyrics(lyrics, tokenizer):
-    tokenizedLyrics = []
-    for lyric in lyrics:
-        lyric = "[CLS] " + lyric + " [SEP]"
-        tokenizedLyrics.append(tokenizer.tokenize(lyric))
-    return tokenizedLyrics
+def predictMasked(maskedLyric):
+    encodings = tokenizer.encode(maskedLyric, return_tensors='pt')
+    maskedPos = (encodings.squeeze() == tokenizer.mask_token_id).nonzero().item()
+    with torch.no_grad():
+        output = model(encodings)
+    hiddenState = output[0].squeeze()
+    maskHiddenState = hiddenState[maskedPos]
+    ids = torch.topk(maskHiddenState, k=20, dim=0)[1]
+    predictedWords = []
+    for id in ids:
+        word = tokenizer.convert_ids_to_tokens(id.item())
+        predictedWords.append(word)
+    return predictedWords
+
+
+def genSingleLyric(initialLyric, lastWord, wordForGen):
+    genLength = random.randint(1, 5)
+    while genLength > 0:
+        maskedGen = wordForGen + " [MASK]"
+        for word in predictMasked(maskedGen):
+            if word != lastWord and len(word) != 1 and '#' not in word:
+                wordForGen += " " + word
+                genLength -= 1
+    return wordForGen
+
+
+# Scoring is messed up?
+def getLyricScore(initialLyric, genLyric):
+    encoding = tokenizer(initialLyric, genLyric, return_tensors='pt')
+    outputs = model(**encoding, labels=torch.LongTensor([1]))
+    nspLogits = outputs.seq_relationship_logits  # use seq_relationship_logits for NSP, use prediction_logits for MLM
+    #print(nspLogits[0, 0] < nspLogits[0, 1]) # [0, 0] is the predicted sentence, False means it is natural
+    return nspLogits[0, 0]
+
+
+# Then this too?
+def getBestLyric(initialLyric, possibleLyrics):
+    lyricScores = []
+    for lyric in possibleLyrics:
+        lyricScores.append(getLyricScore(initialLyric, lyric))
+    maxScore = lyricScores[0]
+    maxScoreIndex = 0
+    for j, score in enumerate(lyricScores):
+        if score > maxScore:
+            maxScoreIndex = j
+    return possibleLyrics[maxScoreIndex]
 
 
 # File paths for each directory of lyrics
@@ -85,20 +124,20 @@ formatTuningFile(selectedLyrics)
 
 # Training model on data with masking
 '''Remember to stick training code in another file or tell her it's commented out'''
-bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=256)
-dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
-trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
-trainer.train()
-if inputGenre == 'pop':
-    trainer.save_model("./popModel")
-elif inputGenre == "rock":
-    trainer.save_model("./rockModel")
-elif inputGenre == "metal":
-    trainer.save_model("./metalModel")
-else:
-    trainer.save_model("./countryModel")
+# bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
+# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+# tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=256)
+# dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
+# trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
+# trainer.train()
+# if inputGenre == 'pop':
+#     trainer.save_model("./popModel")
+# elif inputGenre == "rock":
+#     trainer.save_model("./rockModel")
+# elif inputGenre == "metal":
+#     trainer.save_model("./metalModel")
+# else:
+#     trainer.save_model("./countryModel")
 
 # Selecting model that was saved (have to use new string literal every time bc. the parameter is dumb lol)
 if inputGenre == 'pop':
@@ -114,27 +153,24 @@ else:
     model = BertForPreTraining.from_pretrained("./countryModel")
     tokenizer = BertTokenizer.from_pretrained("./countryModel")
 
+
 model.eval()
-lyric1 = ["You know it's true, oh"]
-lyric2 = ["All the things come back to you"]
-encoding = tokenizer(lyric1, lyric2, return_tensors='pt')
-outputs = model(**encoding, labels=torch.LongTensor([1]))
-#print(outputs)
-nspLogits = outputs.seq_relationship_logits  # use seq_relationship_logits for NSP, use prediction_logits for MLM
-print(nspLogits)
-print(nspLogits[0, 0] < nspLogits[0, 1])
-print(nspLogits[0, 0])
-
-initialLyric = ""
-genSentenceLength = random.randint(2, len(initialLyric)+2)
 
 
-# tokenizedLyricList = tokenizeLyrics(lyricEx, tokenizer)
-# tokenizedLyric = tokenizedLyricList[0]
-# print(tokenizedLyric)
-# initialIndexedTokens = tokenizer.convert_tokens_to_ids(tokenizedLyric)
-# initialSegmentsIDs = [1] * len(tokenizedLyric)
-# initialTokensTensor = torch.tensor([initialIndexedTokens])
-# initialSegmentsTensor = torch.tensor([initialSegmentsIDs])
-# outputs = model(initialSegmentsTensor, initialTokensTensor)
-# print(outputs) # True = random, False = was not random
+initialLyric = "Crumbles to the ground, though we refuse to see"
+lyricSplit = initialLyric.split(" ")
+lastWord = lyricSplit[-1]
+predictFromLast = initialLyric + "\n [MASK]"
+
+lastGeneratedWords = predictMasked(predictFromLast)
+wordsForGenSentence = []
+for k, word in enumerate(lastGeneratedWords):
+    if len(word) != 1:
+        wordsForGenSentence.append(word)
+
+possibleLyrics = []
+for word in wordsForGenSentence:
+    possibleLyrics.append(genSingleLyric(initialLyric, lastWord, word))
+print(possibleLyrics)
+
+print(getBestLyric(initialLyric, possibleLyrics))
