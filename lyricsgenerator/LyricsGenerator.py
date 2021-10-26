@@ -42,15 +42,23 @@ def predictMasked(maskedLyric):
     return predictedWords
 
 
-def genSingleLyric(initialLyric, lastWord, wordForGen):
-    genLength = random.randint(1, 5)
+def genSingleLyric(initialLyric):
+    genLength = random.randint(2, len(initialLyric.split(" ")) + 2)
+    initialLyric += " [SEP]"
+    nextLyric = ""
+    prevLyric = "%"
     while genLength > 0:
-        maskedGen = wordForGen + " [MASK]"
-        for word in predictMasked(maskedGen):
-            if word != lastWord and len(word) != 1 and '#' not in word:
-                wordForGen += " " + word
-                genLength -= 1
-    return wordForGen
+        maskedLyric = initialLyric + " [MASK]"
+        predicted = predictMasked(maskedLyric)
+        print(predicted)
+        for word in predicted:
+            if len(word) > 1 and word != prevLyric:
+                prevLyric = word
+                nextLyric += " " + word
+                initialLyric += " " + word
+                break
+        genLength -= 1
+    return nextLyric
 
 
 # Scoring is messed up?
@@ -157,20 +165,17 @@ else:
 model.eval()
 
 
-initialLyric = "Crumbles to the ground, though we refuse to see"
+initialLyric = "When the days are cold and the cards all fold"
 lyricSplit = initialLyric.split(" ")
 lastWord = lyricSplit[-1]
-predictFromLast = initialLyric + "\n [MASK]"
+predictFromLast = initialLyric
+print(genSingleLyric(predictFromLast))
 
-lastGeneratedWords = predictMasked(predictFromLast)
-wordsForGenSentence = []
-for k, word in enumerate(lastGeneratedWords):
-    if len(word) != 1:
-        wordsForGenSentence.append(word)
-
-possibleLyrics = []
-for word in wordsForGenSentence:
-    possibleLyrics.append(genSingleLyric(initialLyric, lastWord, word))
-print(possibleLyrics)
-
-print(getBestLyric(initialLyric, possibleLyrics))
+'''
+Ideas to prevent repetition in lyrics:
+ - Correct scoring method to ensure following sentences are natural
+ - Check to make sure a sequence isn't repeating (by 2 or 3 words)
+ - Begin lyric with random word from vocabulary (or insert it somewhere else into the lyric randomly)
+ - Generate all lyrics based off random lyrics from generation data, don't have them follow each other
+ - Filter out most common words based off of data (oh, yeah, baby, etc)
+'''
