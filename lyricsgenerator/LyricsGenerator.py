@@ -45,7 +45,7 @@ def predictMasked(maskedLyric):
         output = model(encodings)
     hiddenState = output[0].squeeze()
     maskHiddenState = hiddenState[maskedPos]
-    ids = torch.topk(maskHiddenState, k=10, dim=0)[1]
+    ids = torch.topk(maskHiddenState, k=30, dim=0)[1]
     predictedWords = []
     for id in ids:
         word = tokenizer.convert_ids_to_tokens(id.item())
@@ -54,14 +54,13 @@ def predictMasked(maskedLyric):
 
 
 def genSingleLyric(initialLyric):
-    initialSplit = initialLyric.split(" ")
-    genLength = random.randint(2, len(initialSplit) + 2)
+    genLength = random.randint(2, 7)
     count = genLength
     nextLyric = ""
     prevLyric = []
     while count > 0:
         maskedLyric = initialLyric + " [MASK]"
-        predicted = predictMasked(maskedLyric)
+        predicted = predictMasked(maskedLyric)  # This might be a bad idea, as there is a loss of good info
         random.shuffle(predicted)
         for word in predicted:
             if len(word) > 1 and word not in prevLyric:
@@ -220,8 +219,9 @@ else:
 
 
 model.eval()
-# print(genMultipleLyrics(4))
-print(genLyricsFromPrompt(4, "It's time for you to choose the bullet or the casket"))
+
+print(genMultipleLyrics(4))
+# print(genLyricsFromPrompt(4, ""))
 '''
 Ideas to prevent repetition in lyrics:
  - Correct scoring method to ensure following sentences are natural
