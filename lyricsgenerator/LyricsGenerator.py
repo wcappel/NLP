@@ -44,7 +44,6 @@ def predictMasked(maskedLyric):
 
 def genSingleLyric(initialLyric):
     genLength = random.randint(2, len(initialLyric.split(" ")) + 2)
-    initialLyric += " [SEP]"
     nextLyric = ""
     prevLyric = "%"
     while genLength > 0:
@@ -53,12 +52,15 @@ def genSingleLyric(initialLyric):
         for word in predicted:
             if len(word) > 1 and word != prevLyric:
                 prevLyric = word
-                nextLyric += " " + word
-                initialLyric += " " + word
+                if "##" in word:
+                    nextLyric += word[2:]
+                    initialLyric += word[2:]
+                else:
+                    nextLyric += " " + word
+                    initialLyric += " " + word
                 break
         genLength -= 1
     return nextLyric
-
 
 # Scoring is messed up?
 def getLyricScore(initialLyric, genLyric):
@@ -164,11 +166,13 @@ else:
 model.eval()
 
 
-initialLyric = "When the days are cold and the cards all fold"
+# initialLyric = "Tears stream down your face"
+initialLyric = "Marry me, girl, be my fairy to the world, be my very own constellation"
 lyricSplit = initialLyric.split(" ")
 lastWord = lyricSplit[-1]
 predictFromLast = initialLyric
 print(genSingleLyric(predictFromLast))
+print(tokenizer.tokenize("artificialization"))
 
 '''
 Ideas to prevent repetition in lyrics:
@@ -177,4 +181,13 @@ Ideas to prevent repetition in lyrics:
  - Begin lyric with random word from vocabulary (or insert it somewhere else into the lyric randomly)
  - Generate all lyrics based off random lyrics from generation data, don't have them follow each other
  - Filter out most common words based off of data (oh, yeah, baby, etc)
+ - Are we sure the tokens are being used in the data formatting? ([CLS], [SEP], etc.) 
+   Check formatTuningFile and TextDatasetForNextSentencePrediction
+ - Give it more than 1 line for initialLyric?
+ - Keep generating words until we hit a comma, period, qmark, or [SEP]/[CLS]?
+ - Use tokenizer decode method with output IDs rather than tokens,                      DEFINITELY LOOK INTO THIS
+   this means taking the next word's ID, adding it to a list of the IDs of the predicted next words,
+   then converting list of IDs with decode to string to predict next masked, then returning decode(IDlist) at end
+ - Might have to add [CLS] and [SEP] tags to initialLyric (and then also generated lyric for next lyric to generate
+ - Add embeddings that start with ## to previous word
 '''
