@@ -27,6 +27,17 @@ def formatTuningFile(filePath):
                     output.write("\n")
 
 
+# Reads each file in directory and adds to list that will be returned along w/ file #
+def readFiles(filePath):
+    files = []
+    for file in filePath:
+        current = open(file, 'r')
+        text = current.read()
+        current.close()
+        files += text.split("\n")
+    return files
+
+
 def predictMasked(maskedLyric):
     encodings = tokenizer.encode(maskedLyric, return_tensors='pt')
     maskedPos = (encodings.squeeze() == tokenizer.mask_token_id).nonzero().item()
@@ -34,7 +45,7 @@ def predictMasked(maskedLyric):
         output = model(encodings)
     hiddenState = output[0].squeeze()
     maskHiddenState = hiddenState[maskedPos]
-    ids = torch.topk(maskHiddenState, k=20, dim=0)[1]
+    ids = torch.topk(maskHiddenState, k=10, dim=0)[1]
     predictedWords = []
     for id in ids:
         word = tokenizer.convert_ids_to_tokens(id.item())
@@ -43,24 +54,58 @@ def predictMasked(maskedLyric):
 
 
 def genSingleLyric(initialLyric):
-    genLength = random.randint(2, len(initialLyric.split(" ")) + 2)
+    initialSplit = initialLyric.split(" ")
+    genLength = random.randint(2, len(initialSplit) + 2)
+    count = genLength
     nextLyric = ""
-    prevLyric = "%"
-    while genLength > 0:
+    prevLyric = []
+    while count > 0:
         maskedLyric = initialLyric + " [MASK]"
         predicted = predictMasked(maskedLyric)
+        random.shuffle(predicted)
         for word in predicted:
-            if len(word) > 1 and word != prevLyric:
-                prevLyric = word
+            if len(word) > 1 and word not in prevLyric:
+                prevLyric.append(word)
                 if "##" in word:
-                    nextLyric += word[2:]
-                    initialLyric += word[2:]
+                    if count != genLength:
+                        nextLyric += word[2:]
+                        initialLyric += word[2:]
+                    else:
+                        count += 1
                 else:
                     nextLyric += " " + word
                     initialLyric += " " + word
                 break
-        genLength -= 1
+        count -= 1
     return nextLyric
+
+
+def genMultipleLyrics(numLyrics):
+    goodSelection = False
+    while goodSelection is False:
+        sampleLyric = sampleLyrics[random.randint(1, len(sampleLyrics))]
+        if len(sampleLyric.split()) > 3:
+            goodSelection = True
+    lyrics = ""
+    while numLyrics > 0:
+        generatedLyric = genSingleLyric(sampleLyric)
+        generatedLyric = generatedLyric[1].upper() + generatedLyric[2:]
+        lyrics += generatedLyric + "\n"
+        sampleLyric = generatedLyric
+        numLyrics -= 1
+    return lyrics
+
+
+def genLyricsFromPrompt(numLyrics, prompt):
+    lyrics = ""
+    while numLyrics > 0:
+        generatedLyric = genSingleLyric(prompt)
+        generatedLyric = generatedLyric[1].upper() + generatedLyric[2:]
+        lyrics += generatedLyric + "\n"
+        prompt = generatedLyric
+        numLyrics -= 1
+    return lyrics
+
 
 # Scoring is messed up?
 def getLyricScore(initialLyric, genLyric):
@@ -69,6 +114,14 @@ def getLyricScore(initialLyric, genLyric):
     nspLogits = outputs.seq_relationship_logits  # use seq_relationship_logits for NSP, use prediction_logits for MLM
     #print(nspLogits[0, 0] < nspLogits[0, 1]) # [0, 0] is the predicted sentence, False means it is natural
     return nspLogits[0, 0]
+
+
+def noRepeating(word, split):
+    for item in split[-1:-3]:
+        if word == item:
+            return False
+        else:
+            return True
 
 
 # Then this too?
@@ -131,6 +184,9 @@ tuningFiles = selectedLyrics[(int)(len(selectedLyrics)/5):]
 # Formats lyrics to put in text file to tune BERT
 formatTuningFile(selectedLyrics)
 
+# Read files for samples to generates lyrics
+sampleLyrics = readFiles(generatorFiles)
+
 # Training model on data with masking
 '''Remember to stick training code in another file or tell her it's commented out'''
 # bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
@@ -164,16 +220,8 @@ else:
 
 
 model.eval()
-
-
-# initialLyric = "Tears stream down your face"
-initialLyric = "Marry me, girl, be my fairy to the world, be my very own constellation"
-lyricSplit = initialLyric.split(" ")
-lastWord = lyricSplit[-1]
-predictFromLast = initialLyric
-print(genSingleLyric(predictFromLast))
-print(tokenizer.tokenize("artificialization"))
-
+# print(genMultipleLyrics(4))
+print(genLyricsFromPrompt(4, "It's time for you to choose the bullet or the casket"))
 '''
 Ideas to prevent repetition in lyrics:
  - Correct scoring method to ensure following sentences are natural
