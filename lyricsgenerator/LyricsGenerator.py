@@ -40,7 +40,7 @@ def readFiles(filePath):
     return files
 
 
-# Returns the 30 most likely predictions for the masked word in the lyric
+# Returns the 30 most likely predictions (from embeddings) for the masked word in the lyric
 def predictMasked(maskedLyric):
     encodings = tokenizer.encode(maskedLyric, return_tensors='pt')
     maskedPos = (encodings.squeeze() == tokenizer.mask_token_id).nonzero().item()
@@ -124,8 +124,6 @@ def evaluate(size):
     return evalList
 
 
-
-
 # File paths for each directory of lyrics
 countryFolder = Path('./Country/').rglob('*.txt')
 metalFolder = Path('./Metal/').rglob('*.txt')
@@ -176,7 +174,6 @@ generatorFiles = selectedLyrics[0:int(len(selectedLyrics) * 0.2)]
 tuningFiles = selectedLyrics[int(len(selectedLyrics) * 0.2): int(len(selectedLyrics) * 0.6)]
 evalFiles = selectedLyrics[int(len(selectedLyrics) * 0.6):]
 
-
 # Formats lyrics to put in text file to tune BERT and FNet
 print("formatting tuning and evaluation input files...")
 formatTuningFile(tuningFiles, "tuning.txt")
@@ -188,37 +185,37 @@ sampleLyrics = readFiles(generatorFiles)
 
 # Training BERT model on data with masking
 print("TUNING CODE HAS BEEN COMMENTED OUT, IT IS BELOW THIS STATEMENT")
-bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=256)
-dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
-trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
-trainer.train()
-if inputGenre == 'pop':
-    trainer.save_model("./popModel")
-elif inputGenre == "rock":
-    trainer.save_model("./rockModel")
-elif inputGenre == "metal":
-    trainer.save_model("./metalModel")
-else:
-    trainer.save_model("./countryModel")
+# bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
+# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+# tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=256)
+# dataCollator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
+# trainer = Trainer(model=bertModel, args=trainingArguments, train_dataset=tuningDataset, tokenizer=tokenizer, data_collator=dataCollator)
+# trainer.train()
+# if inputGenre == 'pop':
+#     trainer.save_model("./popModel")
+# elif inputGenre == "rock":
+#     trainer.save_model("./rockModel")
+# elif inputGenre == "metal":
+#     trainer.save_model("./metalModel")
+# else:
+#     trainer.save_model("./countryModel")
 
 # Train evaluation model on different split of lyrics
 print("TUNING CODE FOR EVALUATION MODEL HAS BEEN COMMENTED OUT, IT IS BELOW THIS STATEMENT")
-evalModel = FNetForNextSentencePrediction.from_pretrained('google/fnet-base')
-evalTokenizer = FNetTokenizer.from_pretrained('google/fnet-base')
-evalDataset = TextDatasetForNextSentencePrediction(tokenizer=evalTokenizer, file_path="eval.txt", block_size=256)
-evalDataCollator = DataCollatorForLanguageModeling(tokenizer=evalTokenizer)
-evalTrainer = Trainer(model=evalModel, args=evalArguments, train_dataset=evalDataset, tokenizer=evalTokenizer, data_collator=evalDataCollator)
-evalTrainer.train()
-if inputGenre == 'pop':
-    evalTrainer.save_model("./popEval")
-elif inputGenre == "rock":
-    evalTrainer.save_model("./rockEval")
-elif inputGenre == "metal":
-    evalTrainer.save_model("./metalEval")
-else:
-    evalTrainer.save_model("./countryEval")
+# evalModel = FNetForNextSentencePrediction.from_pretrained('google/fnet-base')
+# evalTokenizer = FNetTokenizer.from_pretrained('google/fnet-base')
+# evalDataset = TextDatasetForNextSentencePrediction(tokenizer=evalTokenizer, file_path="eval.txt", block_size=256)
+# evalDataCollator = DataCollatorForLanguageModeling(tokenizer=evalTokenizer)
+# evalTrainer = Trainer(model=evalModel, args=evalArguments, train_dataset=evalDataset, tokenizer=evalTokenizer, data_collator=evalDataCollator)
+# evalTrainer.train()
+# if inputGenre == 'pop':
+#     evalTrainer.save_model("./popEval")
+# elif inputGenre == "rock":
+#     evalTrainer.save_model("./rockEval")
+# elif inputGenre == "metal":
+#     evalTrainer.save_model("./metalEval")
+# else:
+#     evalTrainer.save_model("./countryEval")
 
 # Selecting evaluation model that was saved
 print("selecting models that were saved from training...")
