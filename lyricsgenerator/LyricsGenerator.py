@@ -38,6 +38,7 @@ def readFiles(filePath):
     return files
 
 
+# Returns the 30 most likely predictions for the masked word in the lyric
 def predictMasked(maskedLyric):
     encodings = tokenizer.encode(maskedLyric, return_tensors='pt')
     maskedPos = (encodings.squeeze() == tokenizer.mask_token_id).nonzero().item()
@@ -53,6 +54,7 @@ def predictMasked(maskedLyric):
     return predictedWords
 
 
+# Generates a one line lyric from a sample lyric
 def genSingleLyric(initialLyric):
     genLength = random.randint(2, 7)
     count = genLength
@@ -60,7 +62,7 @@ def genSingleLyric(initialLyric):
     prevLyric = []
     while count > 0:
         maskedLyric = initialLyric + " [MASK]"
-        predicted = predictMasked(maskedLyric)  # This might be a bad idea, as there is a loss of good info
+        predicted = predictMasked(maskedLyric)
         random.shuffle(predicted)
         for word in predicted:
             if len(word) > 1 and word not in prevLyric:
@@ -79,6 +81,7 @@ def genSingleLyric(initialLyric):
     return nextLyric
 
 
+# Generates multiple lyrics sequentially
 def genMultipleLyrics(numLyrics):
     goodSelection = False
     while goodSelection is False:
@@ -95,32 +98,13 @@ def genMultipleLyrics(numLyrics):
     return lyrics
 
 
-def genLyricsFromPrompt(numLyrics, prompt):
-    lyrics = ""
-    while numLyrics > 0:
-        generatedLyric = genSingleLyric(prompt)
-        generatedLyric = generatedLyric[1].upper() + generatedLyric[2:]
-        lyrics += generatedLyric + "\n"
-        prompt = generatedLyric
-        numLyrics -= 1
-    return lyrics
-
-
-# Scoring is messed up?
+# Outputs score from model of how likely the generated sentence is to follow the initial sentence
 def getLyricScore(initialLyric, genLyric):
     encoding = tokenizer(initialLyric, genLyric, return_tensors='pt')
     outputs = model(**encoding, labels=torch.LongTensor([1]))
     nspLogits = outputs.seq_relationship_logits  # use seq_relationship_logits for NSP, use prediction_logits for MLM
     #print(nspLogits[0, 0] < nspLogits[0, 1]) # [0, 0] is the predicted sentence, False means it is natural
-    return nspLogits[0, 0]
-
-
-def noRepeating(word, split):
-    for item in split[-1:-3]:
-        if word == item:
-            return False
-        else:
-            return True
+    return nspLogits[0, 0].item()
 
 
 # Then this too?
@@ -220,22 +204,5 @@ else:
 
 model.eval()
 
+
 print(genMultipleLyrics(4))
-# print(genLyricsFromPrompt(4, ""))
-'''
-Ideas to prevent repetition in lyrics:
- - Correct scoring method to ensure following sentences are natural
- - Check to make sure a sequence isn't repeating (by 2 or 3 words)
- - Begin lyric with random word from vocabulary (or insert it somewhere else into the lyric randomly)
- - Generate all lyrics based off random lyrics from generation data, don't have them follow each other
- - Filter out most common words based off of data (oh, yeah, baby, etc)
- - Are we sure the tokens are being used in the data formatting? ([CLS], [SEP], etc.) 
-   Check formatTuningFile and TextDatasetForNextSentencePrediction
- - Give it more than 1 line for initialLyric?
- - Keep generating words until we hit a comma, period, qmark, or [SEP]/[CLS]?
- - Use tokenizer decode method with output IDs rather than tokens,                      DEFINITELY LOOK INTO THIS
-   this means taking the next word's ID, adding it to a list of the IDs of the predicted next words,
-   then converting list of IDs with decode to string to predict next masked, then returning decode(IDlist) at end
- - Might have to add [CLS] and [SEP] tags to initialLyric (and then also generated lyric for next lyric to generate
- - Add embeddings that start with ## to previous word
-'''
