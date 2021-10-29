@@ -1,13 +1,15 @@
 import torch
 import random
+import sentencepiece                                          # Please import this one as well
 from pathlib import Path
 from transformers import BertTokenizer, BertForPreTraining, Trainer, TrainingArguments
 from transformers import TextDatasetForNextSentencePrediction, DataCollatorForLanguageModeling
+from transformers import FNetForNextSentencePrediction, FNetTokenizer
 
 
 # Formats lyrics from genre directory into format to train model
-def formatTuningFile(filePath):
-    with open("tuning.txt", mode="w") as output:
+def formatTuningFile(filePath, outputName):
+    with open(outputName, mode="w") as output:
         for file in filePath:
             current = open(file, 'r')
             text = current.read()
@@ -83,41 +85,45 @@ def genSingleLyric(initialLyric):
 
 # Generates multiple lyrics sequentially
 def genMultipleLyrics(numLyrics):
+    lyrics = []
     goodSelection = False
     while goodSelection is False:
-        sampleLyric = sampleLyrics[random.randint(1, len(sampleLyrics))]
+        sampleLyric = sampleLyrics[random.randint(0, len(sampleLyrics) - 1)]
         if len(sampleLyric.split()) > 3:
             goodSelection = True
-    lyrics = ""
     while numLyrics > 0:
         generatedLyric = genSingleLyric(sampleLyric)
         generatedLyric = generatedLyric[1].upper() + generatedLyric[2:]
-        lyrics += generatedLyric + "\n"
+        lyrics.append(generatedLyric)
         sampleLyric = generatedLyric
         numLyrics -= 1
     return lyrics
 
 
-# Outputs score from model of how likely the generated sentence is to follow the initial sentence
-def getLyricScore(initialLyric, genLyric):
-    encoding = tokenizer(initialLyric, genLyric, return_tensors='pt')
-    outputs = model(**encoding, labels=torch.LongTensor([1]))
-    nspLogits = outputs.seq_relationship_logits  # use seq_relationship_logits for NSP, use prediction_logits for MLM
-    #print(nspLogits[0, 0] < nspLogits[0, 1]) # [0, 0] is the predicted sentence, False means it is natural
-    return nspLogits[0, 0].item()
+# Outputs 'False' if evaluation model considers the generated lyric a naturally following lyric
+def getEvalScore(initialLyric, evalLyric):
+    encoding = evalTokenizer(initialLyric, evalLyric, return_tensors='pt')
+    outputs = evalModel(**encoding, labels=torch.LongTensor([1]))
+    evalLogits = outputs.logits
+    return evalLogits[0, 0].item() < evalLogits[0, 1].item()
 
 
-# Then this too?
-def getBestLyric(initialLyric, possibleLyrics):
-    lyricScores = []
-    for lyric in possibleLyrics:
-        lyricScores.append(getLyricScore(initialLyric, lyric))
-    maxScore = lyricScores[0]
-    maxScoreIndex = 0
-    for j, score in enumerate(lyricScores):
-        if score > maxScore:
-            maxScoreIndex = j
-    return possibleLyrics[maxScoreIndex]
+# Generates and then evaluates a batch of lyrics against their sample lyric
+def evaluate(size):
+    evalList = []
+    while size > 0:
+        goodSelection = False
+        sampleLyric = ""
+        while goodSelection is False:
+            sampleLyric = sampleLyrics[random.randint(0, len(sampleLyrics) - 1)]
+            if len(sampleLyric.split()) > 3:
+                goodSelection = True
+        toEval = genSingleLyric(sampleLyric)
+        evalList.append(getEvalScore(sampleLyric, toEval))
+        size -= 1
+    return evalList
+
+
 
 
 # File paths for each directory of lyrics
@@ -146,32 +152,42 @@ while not goodInput:
     else:
         print("Only options are: pop, rock, metal, or country.")
 
+# Setting up training arguments and selecting files of request genre
 selectedLyrics = []
 if inputGenre == 'pop':
     selectedLyrics = popFiles
     trainingArguments = TrainingArguments(output_dir="./popModel", overwrite_output_dir=True)
+    evalArguments = TrainingArguments(output_dir="./popEval", overwrite_output_dir=True)
 elif inputGenre == 'rock':
     selectedLyrics = rockFiles
     trainingArguments = TrainingArguments(output_dir="./rockModel", overwrite_output_dir=True)
+    evalArguments = TrainingArguments(output_dir="./rockEval", overwrite_output_dir=True)
 elif inputGenre == 'metal':
     selectedLyrics = metalFiles
     trainingArguments = TrainingArguments(output_dir="./metalModel", overwrite_output_dir=True)
+    evalArguments = TrainingArguments(output_dir="./metalEval", overwrite_output_dir=True)
 else:
     selectedLyrics = countryFiles
     trainingArguments = TrainingArguments(output_dir="./countryModel", overwrite_output_dir=True)
+    evalArguments = TrainingArguments(output_dir="./countryEval", overwrite_output_dir=True)
 
 # Splits songs for tuning and generating
-generatorFiles = selectedLyrics[0:(int)(len(selectedLyrics)/5)]
-tuningFiles = selectedLyrics[(int)(len(selectedLyrics)/5):]
+generatorFiles = selectedLyrics[0:int(len(selectedLyrics) * 0.2)]
+tuningFiles = selectedLyrics[int(len(selectedLyrics) * 0.2): int(len(selectedLyrics) * 0.6)]
+evalFiles = selectedLyrics[int(len(selectedLyrics) * 0.6):]
 
-# Formats lyrics to put in text file to tune BERT
-formatTuningFile(selectedLyrics)
+
+# Formats lyrics to put in text file to tune BERT and FNet
+print("formatting tuning and evaluation input files...")
+formatTuningFile(tuningFiles, "tuning.txt")
+formatTuningFile(evalFiles, "eval.txt")
 
 # Read files for samples to generates lyrics
+print("reading files for sample lyrics...")
 sampleLyrics = readFiles(generatorFiles)
 
-# Training model on data with masking
-'''Remember to stick training code in another file or tell her it's commented out'''
+# Training BERT model on data with masking
+print("TUNING CODE HAS BEEN COMMENTED OUT, IT IS BELOW THIS STATEMENT")
 # bertModel = BertForPreTraining.from_pretrained('bert-base-uncased')
 # tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 # tuningDataset = TextDatasetForNextSentencePrediction(tokenizer=tokenizer, file_path="tuning.txt", block_size=256)
@@ -187,22 +203,66 @@ sampleLyrics = readFiles(generatorFiles)
 # else:
 #     trainer.save_model("./countryModel")
 
-# Selecting model that was saved (have to use new string literal every time bc. the parameter is dumb lol)
+# Train evaluation model on different split of lyrics
+print("TUNING CODE FOR EVALUATION MODEL HAS BEEN COMMENTED OUT, IT IS BELOW THIS STATEMENT")
+# evalModel = FNetForNextSentencePrediction.from_pretrained('google/fnet-base')
+# evalTokenizer = FNetTokenizer.from_pretrained('google/fnet-base')
+# evalDataset = TextDatasetForNextSentencePrediction(tokenizer=evalTokenizer, file_path="eval.txt", block_size=256)
+# evalDataCollator = DataCollatorForLanguageModeling(tokenizer=evalTokenizer)
+# evalTrainer = Trainer(model=evalModel, args=evalArguments, train_dataset=evalDataset, tokenizer=evalTokenizer, data_collator=evalDataCollator)
+# evalTrainer.train()
+# if inputGenre == 'pop':
+#     evalTrainer.save_model("./popEval")
+# elif inputGenre == "rock":
+#     evalTrainer.save_model("./rockEval")
+# elif inputGenre == "metal":
+#     evalTrainer.save_model("./metalEval")
+# else:
+#     evalTrainer.save_model("./countryEval")
+
+# Selecting evaluation model that was saved
+print("selecting models that were saved from training...")
 if inputGenre == 'pop':
     model = BertForPreTraining.from_pretrained("./popModel")
     tokenizer = BertTokenizer.from_pretrained("./popModel")
+    evalModel = FNetForNextSentencePrediction.from_pretrained("./popEval")
+    evalTokenizer = FNetTokenizer.from_pretrained("./popEval")
 elif inputGenre == "rock":
     model = BertForPreTraining.from_pretrained("./rockModel")
     tokenizer = BertTokenizer.from_pretrained("./rockModel")
+    evalModel = FNetForNextSentencePrediction.from_pretrained("./rockEval")
+    evalTokenizer = FNetTokenizer.from_pretrained("./rockEval")
 elif inputGenre == "metal":
     model = BertForPreTraining.from_pretrained("./metalModel")
     tokenizer = BertTokenizer.from_pretrained("./metalModel")
+    evalModel = FNetForNextSentencePrediction.from_pretrained("./metalEval")
+    evalTokenizer = FNetTokenizer.from_pretrained("./metalEval")
 else:
     model = BertForPreTraining.from_pretrained("./countryModel")
     tokenizer = BertTokenizer.from_pretrained("./countryModel")
+    evalModel = FNetForNextSentencePrediction.from_pretrained("./countryEval")
+    evalTokenizer = FNetTokenizer.from_pretrained("./countryEval")
 
-
+# Generate lyrics
+print("generating a sample of lyrics...")
 model.eval()
+print("—————————————————————————————————————————————————————")
+for lyric in genMultipleLyrics(4):
+    print(lyric)
+print("—————————————————————————————————————————————————————")
 
+# Evaluate lyrics
+print("evaluating lyrics...")
+evalModel.eval()
+evaluatedScores = evaluate(100)
+passed = 0
+failed = 0
+for score in evaluatedScores:
+    if score == False:
+        passed += 1
+    else:
+        failed += 1
 
-print(genMultipleLyrics(4))
+print("################################ EVALUATION ################################")
+print("Evaluated " + str(len(evaluatedScores)) + " lines of generated lyrics. Amount of lyrics that "
+        "passed: " + str(passed) + ". Amount of lyrics that failed: " + str(failed) + ".")
